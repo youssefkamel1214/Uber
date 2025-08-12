@@ -12,8 +12,12 @@ using Microsoft.OpenApi.Models;
 using Serilog;
 using Uber.Data;
 using Uber.Middleware;
+using Uber.Models.Domain;
 using Uber.Repositories;
 using Uber.Repositories.Interfaces;
+using Uber.Services;
+using Uber.Services.Interfaces;
+using Uber.WebSockets;
 
 namespace Uber
 {
@@ -31,6 +35,13 @@ namespace Uber
             builder.Services.AddScoped<IAuthniticationService, AuthniticationService>();
             builder.Services.AddScoped<IDriverRepository, DriverRepository>(); 
             builder.Services.AddScoped<IPassengerRepository, PassengerRepository>();
+            builder.Services.AddScoped<ITripRepository, TripRepository>();
+            builder.Services.AddScoped<IReviewRepository, ReviewRepository>();
+            builder.Services.AddScoped<ITenderRepository, TenderRepository>();
+            builder.Services.AddScoped<ICancellRepository, CanecelltionRepository>();
+            builder.Services.AddScoped<ITripService, TripService>();
+            builder.Services.AddScoped<IWebSocketService,WebSocketService>();
+            builder.Services.AddSingleton<webSocketManager>();
         }
         public static void addjwtinjectisntions(WebApplicationBuilder builder) {
             var TokenValidationParameters = new Microsoft.IdentityModel.Tokens.TokenValidationParameters
@@ -121,7 +132,7 @@ namespace Uber
                 {
                     var dbContext = services.GetRequiredService<UberAuthDatabase>();
                     dbContext.Database.Migrate(); // Creates database and tables
-                                                        // OR for migrations: dbContext.Database.Migrate();
+                                                  // OR for migrations: dbContext.Database.Migrate();
                 }
                 catch (Exception ex)
                 {
@@ -138,7 +149,7 @@ namespace Uber
             app.UseHttpsRedirection();
 
             app.UseAuthorization();
-
+            app.UseWebSockets();
             app.MapControllers();
 
             app.Run();

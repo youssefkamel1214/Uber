@@ -12,5 +12,6 @@ namespace Authnitication.Services.Interfaces
         public Task<AuthResult> CreateUserAsync(string userEmail, string password, string role,Func<string,Task< bool>> createprofile);
         public Task<AuthResult> signInUser(string userEmail, string password);
         public Task<AuthResult> getrefeshedtoken(string token, string refersh);
+        public Task<string>getUID(string token);
     }
 }

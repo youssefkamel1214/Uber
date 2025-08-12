@@ -8,5 +8,6 @@ namespace Uber.Repositories.Interfaces
         public Task<Trip?> getTripByIdAsync(Guid tripId);
         public Task<List<Trip>>getavailbleTripsAsync();
         public Task<bool> updatetripAsync(Trip trip);
+        public Task<bool> findIFUserhasOpenedTripRequast(string PassengerID);
     }
 }

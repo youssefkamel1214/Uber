@@ -1,4 +1,5 @@
-﻿using System.Data.Entity;
+﻿
+using Microsoft.EntityFrameworkCore;
 using Uber.Data;
 using Uber.Models.Domain;
 using Uber.Repositories.Interfaces;
@@ -18,12 +19,16 @@ namespace Uber.Repositories
         {
             trip.TripId = Guid.NewGuid();
             trip.RequestTime = DateTime.UtcNow;
-            trip.Status =TripStatue.DriverWaiting;
-            trip.BasePrice = 50; // Assuming base price is set to 0 initially
             await _db.trips.AddAsync(trip);
             await _db.SaveChangesAsync();
             return trip;
 
+        }
+
+        public async Task<bool> findIFUserhasOpenedTripRequast(string PassengerID)
+        {
+            var result = await _db.trips.AnyAsync(tr=>tr.PassengerId==PassengerID&&!(tr.Status == TripStatue.TripCompleted || tr.Status == TripStatue.TripCancelled));
+            return result;
         }
 
         public async Task<List<Trip>> getavailbleTripsAsync()
@@ -34,7 +39,7 @@ namespace Uber.Repositories
 
         public async Task<Trip?> getTripByIdAsync(Guid tripId)
         {
-            var trip = await _db.trips.FirstOrDefaultAsync(t => t.TripId == tripId);
+            Trip? trip = await _db.trips.FirstOrDefaultAsync(tr=>tr.TripId==tripId);
             return trip;
         }
 

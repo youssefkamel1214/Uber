@@ -98,8 +98,8 @@ namespace Uber.Migrations
                         {
                             Id = "3848fb35-56df-4772-91ef-d5c16c005d79",
                             ConcurrencyStamp = "3848fb35-56df-4772-91ef-d5c16c005d79",
-                            Name = "User",
-                            NormalizedName = "USER"
+                            Name = "Passenger",
+                            NormalizedName = "PASSENGER"
                         });
                 });
 
@@ -431,12 +431,52 @@ namespace Uber.Migrations
                     b.Property<Guid>("TripId")
                         .HasColumnType("uuid");
 
+                    b.Property<string>("type")
+                        .IsRequired()
+                        .HasMaxLength(50)
+                        .HasColumnType("character varying(50)");
+
                     b.HasKey("ReviewId");
 
                     b.HasIndex("TripId")
                         .HasDatabaseName("IX_Reviews_TripId");
 
                     b.ToTable("reviews");
+                });
+
+            modelBuilder.Entity("Uber.Models.Domain.Tender", b =>
+                {
+                    b.Property<Guid>("TenderId")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid");
+
+                    b.Property<string>("DriverId")
+                        .IsRequired()
+                        .HasColumnType("text");
+
+                    b.Property<decimal>("OfferedPrice")
+                        .HasColumnType("numeric");
+
+                    b.Property<DateTime>("TenderTime")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("timestamp with time zone")
+                        .HasDefaultValueSql("CURRENT_TIMESTAMP");
+
+                    b.Property<Guid>("TripId")
+                        .HasColumnType("uuid");
+
+                    b.Property<string>("staute")
+                        .IsRequired()
+                        .HasMaxLength(50)
+                        .HasColumnType("character varying(50)");
+
+                    b.HasKey("TenderId");
+
+                    b.HasIndex("DriverId");
+
+                    b.HasIndex("TripId");
+
+                    b.ToTable("tenders");
                 });
 
             modelBuilder.Entity("Uber.Models.Domain.Trip", b =>
@@ -455,7 +495,6 @@ namespace Uber.Migrations
                         .HasColumnType("numeric");
 
                     b.Property<string>("DriverId")
-                        .IsRequired()
                         .HasColumnType("text");
 
                     b.Property<DateTime?>("EndTime")
@@ -465,7 +504,6 @@ namespace Uber.Migrations
                         .HasColumnType("numeric");
 
                     b.Property<string>("PassengerId")
-                        .IsRequired()
                         .HasColumnType("text");
 
                     b.Property<DateTime>("RequestTime")
@@ -476,7 +514,8 @@ namespace Uber.Migrations
 
                     b.Property<string>("Status")
                         .IsRequired()
-                        .HasColumnType("text");
+                        .HasMaxLength(50)
+                        .HasColumnType("character varying(50)");
 
                     b.Property<string>("destination")
                         .IsRequired()
@@ -599,17 +638,30 @@ namespace Uber.Migrations
                         .IsRequired();
                 });
 
-            modelBuilder.Entity("Uber.Models.Domain.Trip", b =>
+            modelBuilder.Entity("Uber.Models.Domain.Tender", b =>
                 {
                     b.HasOne("Uber.Models.Domain.Driver", null)
                         .WithMany()
                         .HasForeignKey("DriverId")
+                        .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
+
+                    b.HasOne("Uber.Models.Domain.Trip", null)
+                        .WithMany()
+                        .HasForeignKey("TripId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+                });
+
+            modelBuilder.Entity("Uber.Models.Domain.Trip", b =>
+                {
+                    b.HasOne("Uber.Models.Domain.Driver", null)
+                        .WithMany()
+                        .HasForeignKey("DriverId");
 
                     b.HasOne("Uber.Models.Domain.Passenger", null)
                         .WithMany()
-                        .HasForeignKey("PassengerId")
-                        .IsRequired();
+                        .HasForeignKey("PassengerId");
                 });
 #pragma warning restore 612, 618
         }

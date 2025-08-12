@@ -41,6 +41,36 @@ namespace Uber.Repositories
             return driver;
         }
 
+        public async Task<Driver?> MarkDriverIsActive(string email)
+        {
+
+            var driver = await _uberAuthDatabase
+                .drivers.FirstOrDefaultAsync(d => d.Email == email);
+            if (driver != null) 
+            {
+                driver.IsActive = true;                
+                _uberAuthDatabase.drivers.Update(driver);
+                await _uberAuthDatabase.SaveChangesAsync();
+                await MarkDriverIsAvailble(driver.DriverId);
+            }
+            return driver;
+        }
+
+        public async Task<bool> MarkDriverIsAvailble(string driverId)
+        {
+            var driver = await _uberAuthDatabase
+               .drivers.FirstOrDefaultAsync(d => d.DriverId == driverId);
+            if (driver != null)
+            {
+                driver.isAvailable = ! await  _uberAuthDatabase.trips.AnyAsync(tr => !(tr.Status == Utils.TripStatue.TripCancelled ||
+                tr.Status == Utils.TripStatue.TripCompleted) && tr.DriverId == driver.DriverId);
+                _uberAuthDatabase.drivers.Update(driver);
+                await _uberAuthDatabase.SaveChangesAsync();
+                return driver.isAvailable;
+            }
+            throw new Exception("driverId isnt Exists");
+        }
+
         public async Task<bool> updateDriver(Driver driver)
         {
             var exsitingDriver = await _uberAuthDatabase

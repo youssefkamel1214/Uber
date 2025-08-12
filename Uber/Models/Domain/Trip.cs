@@ -5,8 +5,8 @@ namespace Uber.Models.Domain
     public class Trip
     {
         public Guid TripId { get; set; } = Guid.NewGuid();
-        public string DriverId { get; set; }
-        public string PassengerId { get; set; }
+        public string? DriverId { get; set; }
+        public string? PassengerId { get; set; }
         public string source { get; set; }
         public string destination { get; set; }
         public Decimal Distance { get; set; }

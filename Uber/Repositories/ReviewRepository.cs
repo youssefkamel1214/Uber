@@ -1,4 +1,5 @@
 ﻿using Microsoft.EntityFrameworkCore;
+using System.Data.Entity;
 using Uber.Data;
 using Uber.Models.Domain;
 using Uber.Repositories.Interfaces;
@@ -36,13 +37,26 @@ namespace Uber.Repositories
 
         public async Task<List<Review>> getReviewsByDriverId(string driverId)
         {
-            var reviews = await _db.reviews.Where(r => _db.trips.Any(tr => tr.DriverId == driverId && tr.TripId == r.TripId)).ToListAsync();
+            var reviews = await (from rv in _db.reviews
+                                 join tr in _db.trips on rv.TripId equals tr.TripId
+                                 where tr.DriverId == driverId
+                                 select rv).ToListAsync();
             return reviews;
         }
 
         public async Task<List<Review>> getReviewsByPassengerId(string passengerId)
         {
-            var reviews = await _db.reviews.Where(r => _db.trips.Any(tr => tr.PassengerId == passengerId && tr.TripId == r.TripId)).ToListAsync();
+            var reviews = await _db.reviews.Join(_db.trips,
+                rv=>rv.TripId,
+                tr=>tr.TripId,
+                (rv,tr)=>new {Review=rv,Trip=tr })
+                .Where(r => r.Trip.PassengerId==passengerId).Select(row=>row.Review).ToListAsync();
+            return reviews;
+        }
+
+        public async Task<List<Review>> GetReviewsOnTrip(Guid tripId)
+        {
+            var reviews = await _db.reviews.Where(r => r.TripId == tripId).ToListAsync();
             return reviews;
         }
     }

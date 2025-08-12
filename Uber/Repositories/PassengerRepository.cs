@@ -1,4 +1,5 @@
-﻿using System.Data.Entity;
+﻿
+using Microsoft.EntityFrameworkCore;
 using Uber.Data;
 using Uber.Models.Domain;
 using Uber.Repositories.Interfaces;
@@ -47,7 +48,7 @@ namespace Uber.Repositories
         public async Task<bool> updatePassenger(Passenger passenger)
         {
             var exsitingPassenger = await _uberAuthDatabase
-                         .passengers.FirstOrDefaultAsync(d => d.PassngerId == passenger.DriverId);
+                         .passengers.FirstOrDefaultAsync(d => d.PassngerId == passenger.PassngerId);
             if (exsitingPassenger == null)
             {
                 throw new InvalidOperationException("Passenger not found.");

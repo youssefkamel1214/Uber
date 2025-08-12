@@ -1,5 +1,6 @@
 ﻿using Authnitication.Services.Interfaces;
 using Microsoft.AspNetCore.Http;
+using Microsoft.AspNetCore.Identity.Data;
 using Microsoft.AspNetCore.Mvc;
 using Uber.Models.Domain;
 using Uber.Models.DTO.Reqeusts;
@@ -43,6 +44,7 @@ namespace Uber.Controllers
             });
             if (result.success)
             {
+                await _driverRepository.MarkDriverIsActive(registerRequest.Email);
                 return Ok(result);
             }
             else
@@ -63,7 +65,7 @@ namespace Uber.Controllers
                 Email = registerRequest.Email,
                 PhoneNumber = registerRequest.PhoneNumber, 
             };
-            var result = await _authService.CreateUserAsync(registerRequest.Email, registerRequest.Password, "Driver", async (applicationuserid) => {
+            var result = await _authService.CreateUserAsync(registerRequest.Email, registerRequest.Password, "Passenger", async (applicationuserid) => {
                 passenger.PassngerId = applicationuserid;
                 return await _passengerRepository.createPassengerAsync(passenger); // Simulating profile creation success
             });
@@ -85,6 +87,7 @@ namespace Uber.Controllers
             var result = await _authService.signInUser(loginRequest.Email, loginRequest.Password);
             if (result.success)
             {
+                await  _driverRepository.MarkDriverIsActive(loginRequest.Email);
                 return Ok(result);
             }
             else
@@ -92,6 +95,9 @@ namespace Uber.Controllers
                 return BadRequest(new { errors = result.Error });
             }
         }
+
+        
+
         [HttpPost]
         [Route("refreshtoken")]
         public async Task<IActionResult> RefreshToken([FromBody] RefreshTokenRequestDto refreshTokenRequest)

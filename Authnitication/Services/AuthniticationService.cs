@@ -66,7 +66,8 @@ namespace Authnitication.Services
             }
 
         }
-
+        // here where we verify the refresh token
+        // and here i extract the  claims from the jwt token  but i dont know why the jti claim is not generated if i put claim of userId
         public async Task<AuthResult> getrefeshedtoken(string token, string refersh)
         {
             var jwtHandler = new JwtSecurityTokenHandler();
@@ -88,12 +89,11 @@ namespace Authnitication.Services
                     }
                 }
                 var jwtSecurityToken = validatedToken as JwtSecurityToken;
-                var expiryDate = jwtSecurityToken?.ValidTo;
                 var claims = jwtSecurityToken?.Claims;
                 var emailClaim = claims?.FirstOrDefault(c => c.Type == JwtRegisteredClaimNames.Email);
                 string? dateinput = emailClaim?.Value.Split(",,")[1];
                 var expiryDateTime = DateTime.Parse(dateinput);
-                if (expiryDate > DateTime.UtcNow)
+                if (expiryDateTime > DateTime.UtcNow)
                 {
                     return new AuthResult
                     {
@@ -206,16 +206,19 @@ namespace Authnitication.Services
             }
            
         }
+        // here wen we generate the jwt token we also generate the refresh token
+        // here is where error happens when  i try give claim Uid and give userId some how it not genrates jti claim
+        // and also i tried to add claim of expiry date it also not working
         private async Task<AuthResult> GenerateJwtToken(IdentityUser user, List<string> roles)
         {
      
-            var expirydateTime = DateTime.UtcNow.AddSeconds(30); // Set the token expiration time
+            var expirydateTime = DateTime.UtcNow.AddMinutes(30); // Set the token expiration time
             var jwtHandler = new JwtSecurityTokenHandler();
             var key = Encoding.ASCII.GetBytes(_configuration["jwt:Key"]);
             var guid = Guid.NewGuid().ToString();
             var claims = new List<Claim>
             {
-                    new Claim(JwtRegisteredClaimNames.Email,$"{user.Email},,{expirydateTime.ToString()}"),
+                    new Claim(JwtRegisteredClaimNames.Email,$"{user.Id},,{expirydateTime.ToString()}"),
                     new Claim(JwtRegisteredClaimNames.Sub, user.Email),
                     new Claim(JwtRegisteredClaimNames.Jti,guid ),
             };
@@ -264,6 +267,21 @@ namespace Authnitication.Services
 
             return new string(Enumerable.Repeat(chars, lenght).
                 Select(x => x[random.Next(x.Length)]).ToArray());
+        }
+
+        public async Task<string> getUID(string token)
+        {
+            var jwtHandler = new JwtSecurityTokenHandler();
+            var refreshValidationParams = _tokenValidationParameters.Clone();
+            refreshValidationParams.ValidateLifetime = false;
+            refreshValidationParams.ValidateIssuer = false;
+            ClaimsPrincipal tokeninverification = jwtHandler.
+                ValidateToken(token, refreshValidationParams,
+                out var validatedToken);
+            var claims = (validatedToken as JwtSecurityToken)?.Claims;
+            var emailClaim = claims?.FirstOrDefault(c => c.Type == JwtRegisteredClaimNames.Email);
+            string dateinput = emailClaim?.Value.Split(",,")[0];
+            return dateinput;
         }
     }
 }

@@ -12,8 +12,8 @@ namespace Uber.Models.DTO.Reqeusts
         [EmailAddress]
         public string Email { get; set; }
         [Required]
-        [MinLength(14)]
-        [MaxLength(14)]
+        [MinLength(12)]
+        [MaxLength(12)]
         public string PhoneNumber { get; set; }
         [Required]
         [MinLength(6)]

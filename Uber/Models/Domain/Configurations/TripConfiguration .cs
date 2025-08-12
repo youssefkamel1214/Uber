@@ -14,10 +14,14 @@ namespace Uber.Models.Domain.Configurations
                 .WithMany()
                 .HasForeignKey(t => t.DriverId)
                 .OnDelete(DeleteBehavior.ClientSetNull);
+           builder.Property(t => t.DriverId)
+                   .IsRequired(false);
             builder.HasOne<Passenger>()
                    .WithMany()
                    .HasForeignKey(t => t.PassengerId)
                    .OnDelete(DeleteBehavior.ClientSetNull);
+            builder.Property(t => t.PassengerId)
+                 .IsRequired(false);
             builder.Property(t=>t.Status).HasConversion<string>().HasMaxLength(50).IsRequired();
             builder.HasIndex(builder => builder.DriverId)
                 .HasDatabaseName("IX_Trips_DriverId");
