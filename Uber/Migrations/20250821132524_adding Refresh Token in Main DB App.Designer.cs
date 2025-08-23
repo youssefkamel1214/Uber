@@ -12,8 +12,8 @@ using Uber.Data;
 namespace Uber.Migrations
 {
     [DbContext(typeof(UberAuthDatabase))]
-    [Migration("20250805012056_fixing Design in Review entity")]
-    partial class fixingDesigninReviewentity
+    [Migration("20250821132524_adding Refresh Token in Main DB App")]
+    partial class addingRefreshTokeninMainDBApp
     {
         /// <inheritdoc />
         protected override void BuildTargetModel(ModelBuilder modelBuilder)
@@ -47,10 +47,6 @@ namespace Uber.Migrations
                         .IsRequired()
                         .HasColumnType("text");
 
-                    b.Property<string>("UserId")
-                        .IsRequired()
-                        .HasColumnType("text");
-
                     b.Property<bool>("isRevoked")
                         .HasColumnType("boolean");
 
@@ -58,8 +54,6 @@ namespace Uber.Migrations
                         .HasColumnType("boolean");
 
                     b.HasKey("Id");
-
-                    b.HasIndex("UserId");
 
                     b.ToTable("RefreshTokens");
                 });
@@ -101,8 +95,8 @@ namespace Uber.Migrations
                         {
                             Id = "3848fb35-56df-4772-91ef-d5c16c005d79",
                             ConcurrencyStamp = "3848fb35-56df-4772-91ef-d5c16c005d79",
-                            Name = "User",
-                            NormalizedName = "USER"
+                            Name = "Passenger",
+                            NormalizedName = "PASSENGER"
                         });
                 });
 
@@ -183,6 +177,11 @@ namespace Uber.Migrations
                         .HasMaxLength(256)
                         .HasColumnType("character varying(256)");
 
+                    b.Property<string>("UserType")
+                        .IsRequired()
+                        .HasMaxLength(13)
+                        .HasColumnType("character varying(13)");
+
                     b.HasKey("Id");
 
                     b.HasIndex("NormalizedEmail")
@@ -193,6 +192,10 @@ namespace Uber.Migrations
                         .HasDatabaseName("UserNameIndex");
 
                     b.ToTable("AspNetUsers", (string)null);
+
+                    b.HasDiscriminator<string>("UserType").HasValue("IdentityUser");
+
+                    b.UseTphMappingStrategy();
                 });
 
             modelBuilder.Entity("Microsoft.AspNetCore.Identity.IdentityUserClaim<string>", b =>
@@ -285,137 +288,30 @@ namespace Uber.Migrations
                     b.Property<DateTime>("CancellationTime")
                         .HasColumnType("timestamp with time zone");
 
+                    b.Property<string>("CancelledBy")
+                        .IsRequired()
+                        .HasColumnType("text");
+
+                    b.Property<decimal>("Fee")
+                        .HasColumnType("numeric");
+
                     b.Property<bool>("IsRefunded")
                         .HasColumnType("boolean");
 
                     b.Property<string>("Reason")
-                        .IsRequired()
                         .HasColumnType("text");
 
                     b.Property<Guid>("TripId")
                         .HasColumnType("uuid");
 
-                    b.Property<string>("cancelledBy")
-                        .IsRequired()
-                        .HasMaxLength(50)
-                        .HasColumnType("character varying(50)");
-
                     b.HasKey("CancellationId");
 
+                    b.HasIndex("CancelledBy");
+
                     b.HasIndex("TripId")
-                        .IsUnique()
                         .HasDatabaseName("IX_Cancellations_TripId");
 
                     b.ToTable("cancellations");
-                });
-
-            modelBuilder.Entity("Uber.Models.Domain.Driver", b =>
-                {
-                    b.Property<string>("DriverId")
-                        .HasColumnType("text");
-
-                    b.Property<string>("Email")
-                        .IsRequired()
-                        .HasMaxLength(100)
-                        .HasColumnType("character varying(100)");
-
-                    b.Property<string>("FirstName")
-                        .IsRequired()
-                        .HasMaxLength(100)
-                        .HasColumnType("character varying(100)");
-
-                    b.Property<bool>("IsActive")
-                        .HasColumnType("boolean");
-
-                    b.Property<string>("LastName")
-                        .IsRequired()
-                        .HasMaxLength(100)
-                        .HasColumnType("character varying(100)");
-
-                    b.Property<string>("LicensePlate")
-                        .IsRequired()
-                        .HasMaxLength(12)
-                        .HasColumnType("character varying(12)");
-
-                    b.Property<string>("PhoneNumber")
-                        .IsRequired()
-                        .HasMaxLength(12)
-                        .HasColumnType("character varying(12)");
-
-                    b.Property<decimal?>("Rating")
-                        .HasColumnType("numeric");
-
-                    b.Property<string>("SSN")
-                        .IsRequired()
-                        .HasMaxLength(14)
-                        .HasColumnType("character varying(14)");
-
-                    b.Property<bool>("isAvailable")
-                        .HasColumnType("boolean");
-
-                    b.HasKey("DriverId");
-
-                    b.HasIndex("Email")
-                        .IsUnique()
-                        .HasDatabaseName("IX_Drivers_Email");
-
-                    b.HasIndex("LicensePlate")
-                        .IsUnique()
-                        .HasDatabaseName("IX_Drivers_LicensePlate");
-
-                    b.HasIndex("PhoneNumber")
-                        .IsUnique()
-                        .HasDatabaseName("IX_Drivers_PhoneNumber");
-
-                    b.HasIndex("SSN")
-                        .IsUnique()
-                        .HasDatabaseName("IX_Drivers_SSN");
-
-                    b.ToTable("drivers");
-                });
-
-            modelBuilder.Entity("Uber.Models.Domain.Passenger", b =>
-                {
-                    b.Property<string>("PassngerId")
-                        .HasColumnType("text");
-
-                    b.Property<int>("CancellationCount")
-                        .HasColumnType("integer");
-
-                    b.Property<string>("Email")
-                        .IsRequired()
-                        .HasMaxLength(100)
-                        .HasColumnType("character varying(100)");
-
-                    b.Property<string>("FirstName")
-                        .IsRequired()
-                        .HasMaxLength(100)
-                        .HasColumnType("character varying(100)");
-
-                    b.Property<string>("LastName")
-                        .IsRequired()
-                        .HasMaxLength(100)
-                        .HasColumnType("character varying(100)");
-
-                    b.Property<string>("PhoneNumber")
-                        .IsRequired()
-                        .HasMaxLength(12)
-                        .HasColumnType("character varying(12)");
-
-                    b.Property<decimal?>("rating")
-                        .HasColumnType("numeric");
-
-                    b.HasKey("PassngerId");
-
-                    b.HasIndex("Email")
-                        .IsUnique()
-                        .HasDatabaseName("IX_Passengers_Email");
-
-                    b.HasIndex("PhoneNumber")
-                        .IsUnique()
-                        .HasDatabaseName("IX_Passengers_PhoneNumber");
-
-                    b.ToTable("passengers");
                 });
 
             modelBuilder.Entity("Uber.Models.Domain.Review", b =>
@@ -449,10 +345,12 @@ namespace Uber.Migrations
 
             modelBuilder.Entity("Uber.Models.Domain.Tender", b =>
                 {
-                    b.Property<Guid>("TripId")
+                    b.Property<Guid>("TenderId")
+                        .ValueGeneratedOnAdd()
                         .HasColumnType("uuid");
 
                     b.Property<string>("DriverId")
+                        .IsRequired()
                         .HasColumnType("text");
 
                     b.Property<decimal>("OfferedPrice")
@@ -463,14 +361,19 @@ namespace Uber.Migrations
                         .HasColumnType("timestamp with time zone")
                         .HasDefaultValueSql("CURRENT_TIMESTAMP");
 
+                    b.Property<Guid>("TripId")
+                        .HasColumnType("uuid");
+
                     b.Property<string>("staute")
                         .IsRequired()
                         .HasMaxLength(50)
                         .HasColumnType("character varying(50)");
 
-                    b.HasKey("TripId", "DriverId");
+                    b.HasKey("TenderId");
 
                     b.HasIndex("DriverId");
+
+                    b.HasIndex("TripId");
 
                     b.ToTable("tenders");
                 });
@@ -484,14 +387,10 @@ namespace Uber.Migrations
                     b.Property<decimal>("BasePrice")
                         .HasColumnType("numeric");
 
-                    b.Property<decimal>("CancellationFee")
-                        .HasColumnType("numeric");
-
                     b.Property<decimal>("Distance")
                         .HasColumnType("numeric");
 
                     b.Property<string>("DriverId")
-                        .IsRequired()
                         .HasColumnType("text");
 
                     b.Property<DateTime?>("EndTime")
@@ -501,7 +400,6 @@ namespace Uber.Migrations
                         .HasColumnType("numeric");
 
                     b.Property<string>("PassengerId")
-                        .IsRequired()
                         .HasColumnType("text");
 
                     b.Property<DateTime>("RequestTime")
@@ -534,15 +432,63 @@ namespace Uber.Migrations
                     b.ToTable("trips");
                 });
 
-            modelBuilder.Entity("Authnitication.Models.Domain.RefreshToken", b =>
+            modelBuilder.Entity("Uber.Models.Domain.UberUser", b =>
                 {
-                    b.HasOne("Microsoft.AspNetCore.Identity.IdentityUser", "User")
-                        .WithMany()
-                        .HasForeignKey("UserId")
-                        .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired();
+                    b.HasBaseType("Microsoft.AspNetCore.Identity.IdentityUser");
 
-                    b.Navigation("User");
+                    b.Property<int>("NumberOfReviews")
+                        .HasColumnType("integer");
+
+                    b.Property<decimal?>("rating")
+                        .HasColumnType("numeric");
+
+                    b.ToTable("AspNetUsers", (string)null);
+
+                    b.HasDiscriminator().HasValue("UberUser");
+                });
+
+            modelBuilder.Entity("Uber.Models.Domain.Driver", b =>
+                {
+                    b.HasBaseType("Uber.Models.Domain.UberUser");
+
+                    b.Property<bool>("IsActive")
+                        .HasColumnType("boolean");
+
+                    b.Property<string>("LicensePlate")
+                        .IsRequired()
+                        .HasMaxLength(12)
+                        .HasColumnType("character varying(12)");
+
+                    b.Property<string>("SSN")
+                        .IsRequired()
+                        .HasMaxLength(14)
+                        .HasColumnType("character varying(14)");
+
+                    b.Property<bool>("isAvailable")
+                        .HasColumnType("boolean");
+
+                    b.HasIndex("LicensePlate")
+                        .IsUnique()
+                        .HasDatabaseName("IX_Drivers_LicensePlate");
+
+                    b.HasIndex("SSN")
+                        .IsUnique()
+                        .HasDatabaseName("IX_Drivers_SSN");
+
+                    b.HasDiscriminator().HasValue("Driver");
+                });
+
+            modelBuilder.Entity("Uber.Models.Domain.Passenger", b =>
+                {
+                    b.HasBaseType("Uber.Models.Domain.UberUser");
+
+                    b.Property<int>("CancellationCount")
+                        .HasColumnType("integer");
+
+                    b.Property<string>("paymentMethod")
+                        .HasColumnType("text");
+
+                    b.HasDiscriminator().HasValue("Passenger");
                 });
 
             modelBuilder.Entity("Microsoft.AspNetCore.Identity.IdentityRoleClaim<string>", b =>
@@ -598,31 +544,19 @@ namespace Uber.Migrations
 
             modelBuilder.Entity("Uber.Models.Domain.Cancellation", b =>
                 {
-                    b.HasOne("Uber.Models.Domain.Trip", null)
-                        .WithOne()
-                        .HasForeignKey("Uber.Models.Domain.Cancellation", "TripId")
-                        .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired();
-                });
-
-            modelBuilder.Entity("Uber.Models.Domain.Driver", b =>
-                {
                     b.HasOne("Microsoft.AspNetCore.Identity.IdentityUser", "User")
-                        .WithOne()
-                        .HasForeignKey("Uber.Models.Domain.Driver", "DriverId")
+                        .WithMany()
+                        .HasForeignKey("CancelledBy")
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
 
-                    b.Navigation("User");
-                });
-
-            modelBuilder.Entity("Uber.Models.Domain.Passenger", b =>
-                {
-                    b.HasOne("Microsoft.AspNetCore.Identity.IdentityUser", "User")
-                        .WithOne()
-                        .HasForeignKey("Uber.Models.Domain.Passenger", "PassngerId")
+                    b.HasOne("Uber.Models.Domain.Trip", "Trip")
+                        .WithMany()
+                        .HasForeignKey("TripId")
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
+
+                    b.Navigation("Trip");
 
                     b.Navigation("User");
                 });
@@ -638,30 +572,36 @@ namespace Uber.Migrations
 
             modelBuilder.Entity("Uber.Models.Domain.Tender", b =>
                 {
-                    b.HasOne("Uber.Models.Domain.Driver", null)
+                    b.HasOne("Uber.Models.Domain.Driver", "Driver")
                         .WithMany()
                         .HasForeignKey("DriverId")
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
 
-                    b.HasOne("Uber.Models.Domain.Trip", null)
+                    b.HasOne("Uber.Models.Domain.Trip", "Trip")
                         .WithMany()
                         .HasForeignKey("TripId")
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
+
+                    b.Navigation("Driver");
+
+                    b.Navigation("Trip");
                 });
 
             modelBuilder.Entity("Uber.Models.Domain.Trip", b =>
                 {
-                    b.HasOne("Uber.Models.Domain.Driver", null)
+                    b.HasOne("Uber.Models.Domain.Driver", "Driver")
                         .WithMany()
-                        .HasForeignKey("DriverId")
-                        .IsRequired();
+                        .HasForeignKey("DriverId");
 
-                    b.HasOne("Uber.Models.Domain.Passenger", null)
+                    b.HasOne("Uber.Models.Domain.Passenger", "Passenger")
                         .WithMany()
-                        .HasForeignKey("PassengerId")
-                        .IsRequired();
+                        .HasForeignKey("PassengerId");
+
+                    b.Navigation("Driver");
+
+                    b.Navigation("Passenger");
                 });
 #pragma warning restore 612, 618
         }

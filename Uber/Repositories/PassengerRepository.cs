@@ -18,7 +18,7 @@ namespace Uber.Repositories
         public async Task<bool> createPassengerAsync(Passenger passenger)
         {
 
-            var pass = await _uberAuthDatabase.passengers.AddAsync(passenger);
+            var pass = await _uberAuthDatabase.UberUsers.AddAsync(passenger);
             if (pass == null)
             {
                 throw new InvalidOperationException("Driver could not be added.");
@@ -41,20 +41,23 @@ namespace Uber.Repositories
         public async Task<Passenger?> getPassengerByIdAsync(string passengerId)
         {
             var passenger =await  _uberAuthDatabase
-                .passengers.FirstOrDefaultAsync(p => p.PassngerId == passengerId);
+                .UberUsers.OfType<Passenger>().FirstOrDefaultAsync(p => p.Id == passengerId);
             return passenger;
         }
 
         public async Task<bool> updatePassenger(Passenger passenger)
         {
             var exsitingPassenger = await _uberAuthDatabase
-                         .passengers.FirstOrDefaultAsync(d => d.PassngerId == passenger.PassngerId);
+                         .UberUsers.OfType<Passenger>().FirstOrDefaultAsync(d => d.Id == passenger.Id);
             if (exsitingPassenger == null)
             {
                 throw new InvalidOperationException("Passenger not found.");
             }
             exsitingPassenger.rating = passenger.rating;
-            exsitingPassenger.CancellationCount = passenger.CancellationCount;
+            exsitingPassenger.NumberOfReviews = passenger.NumberOfReviews;
+            exsitingPassenger.Home = passenger.Home;
+            exsitingPassenger.Work = passenger.Work;
+            _uberAuthDatabase.UberUsers.Update(exsitingPassenger);
             return await _uberAuthDatabase.SaveChangesAsync()>0;
 
         }

@@ -7,11 +7,11 @@ namespace Uber.Models.Domain.Configurations
         public void Configure(EntityTypeBuilder<Tender> builder)
         {
             builder.HasKey(t => t.TenderId);
-            builder.HasOne<Trip>()
+            builder.HasOne(t=>t.Trip)
                 .WithMany()
                 .HasForeignKey(t => t.TripId)
                 .OnDelete(DeleteBehavior.Cascade);
-            builder.HasOne<Driver>().WithMany()
+            builder.HasOne(t=>t.Driver).WithMany()
                 .HasForeignKey(t => t.DriverId)
                 .OnDelete(DeleteBehavior.Cascade);
             builder.Property(t => t.OfferedPrice).IsRequired();

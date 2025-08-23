@@ -15,7 +15,11 @@ namespace Uber.Models.Domain.Configurations
                 .WithMany()
                 .HasForeignKey(r => r.TripId)
                 .OnDelete(DeleteBehavior.Cascade);
-
+            builder.HasOne<UberUser>()
+                .WithMany()
+                .HasForeignKey(r => r.ReviewerId)
+                .OnDelete(DeleteBehavior.SetNull);
+            
             builder.Property(r => r.type)
                 .HasConversion<string>().HasMaxLength(50)
                     .IsRequired();

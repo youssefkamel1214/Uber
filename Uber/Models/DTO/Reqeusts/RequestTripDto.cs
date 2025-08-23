@@ -1,12 +1,13 @@
 ﻿using System.ComponentModel.DataAnnotations;
+using Uber.Models.Domain;
 
 namespace Uber.Models.DTO.Reqeusts
 {
     public class RequestTripDto
     {
         [Required]
-        public string source { get; set; }
+        public Point source { get; set; }
         [Required]
-        public string destination { get; set; }
+        public Point destination { get; set; }
     }
 }

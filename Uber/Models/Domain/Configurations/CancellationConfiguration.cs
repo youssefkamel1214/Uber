@@ -10,15 +10,16 @@ namespace Uber.Models.Domain.Configurations
             builder.HasKey(c => c.CancellationId);
             builder.Property(c => c.CancellationId)
                 .ValueGeneratedOnAdd();
-            builder.HasOne<Trip>()
-                .WithOne()
-                .HasForeignKey<Cancellation>(c => c.TripId)
+            builder.HasOne(c => c.User).WithMany().HasForeignKey(c => c.CancelledBy).OnDelete(DeleteBehavior.Cascade);
+            builder.HasOne(c=>c.Trip)
+                .WithMany()
+                .HasForeignKey(c => c.TripId)
                 .OnDelete(DeleteBehavior.Cascade);
+            builder.Property(c => c.Fee).IsRequired();
+           
             builder.HasIndex(c => c.TripId)
                 .HasDatabaseName("IX_Cancellations_TripId");
-            builder.Property(c=>c.cancelledBy).HasConversion<string>()
-                .HasMaxLength(50)
-                .IsRequired();
+
 
         }
     }

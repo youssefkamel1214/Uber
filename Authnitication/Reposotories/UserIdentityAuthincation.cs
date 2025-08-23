@@ -11,21 +11,19 @@ using System.Threading.Tasks;
 
 namespace Authnitication.Reposotories
 {
-    public class UserIdentityAuthincation : IUserIdentityAuthincation
+    public class UserIdentityAuthincation <TUser> : IUserIdentityAuthincation<TUser>
+        where TUser : IdentityUser
     {
-        private readonly UserManager<IdentityUser> _userManager;
-        private readonly AuthDatabase _authDatabase;
+        private readonly UserManager<TUser> _userManager;
 
-        public UserIdentityAuthincation(UserManager<IdentityUser> userManager, AuthDatabase authDatabase)
+        public UserIdentityAuthincation(UserManager<TUser> userManager)
         {
             _userManager = userManager;
-            _authDatabase = authDatabase;
         }
 
-        public async Task<IdentityResult> createUser(string useremail, string password, string role, Func<string, Task<bool>> createprofile)
+        public async Task<IdentityResult> createUser(TUser user,string password,string role)
         {
-            var user = new IdentityUser { UserName = useremail, Email = useremail };
-            var existingUser = await _userManager.FindByEmailAsync(useremail);
+            var existingUser = await _userManager.FindByEmailAsync(user.Email);
             if (existingUser != null)
             {
                 throw new InvalidOperationException("User already exists with this email.");
@@ -35,26 +33,21 @@ namespace Authnitication.Reposotories
             {
               throw new InvalidOperationException("User creation failed: " + string.Join(", ", result.Errors.Select(e => e.Description)));
             }
-            await  _userManager.AddToRoleAsync(user, role);
-            bool success = false;
-            string error="";
-            try 
-            { 
-                 success= await createprofile(user.Id);
-            }catch (Exception ex)
-            {
-                success = false;
-                error = $"{ex.Message}";
-            }
-            if (!success)
-            {
-                await _userManager.DeleteAsync(user);
-                throw new InvalidOperationException($"{error}");
-            }
+            await  _userManager.AddToRoleAsync(user, role);            
             return result;
         }
 
-        public async Task<IdentityUser> FindByIdAsync(string userId)
+        public async Task<TUser> FindByEmailAsync(string email)
+        {
+            var user = await _userManager.FindByEmailAsync(email);
+            if (user == null)
+            {
+                throw new InvalidOperationException("User not found.");
+            }
+            return user;
+        }
+
+        public async Task<TUser> FindByIdAsync(string userId)
         {
             var user = await _userManager.FindByIdAsync(userId);
             if (user == null)
@@ -64,7 +57,7 @@ namespace Authnitication.Reposotories
             return user;
         }
 
-        public async Task<List<string>> GetUserRolesAsync(IdentityUser user)
+        public async Task<List<string>> GetUserRolesAsync(TUser user)
         {
             var roles = await _userManager.GetRolesAsync(user);
             if (roles == null || !roles.Any()) 
@@ -74,9 +67,9 @@ namespace Authnitication.Reposotories
             return roles.ToList();
         }
 
-        public async Task<IdentityUser?> signin(string useremail, string password)
+        public async Task<TUser?> signin(string useremail, string password)
         {
-            IdentityUser? user = await _userManager.FindByEmailAsync(useremail);
+            TUser? user = await _userManager.FindByEmailAsync(useremail);
             if (user != null && await _userManager.CheckPasswordAsync(user, password))
             {
                 return user;

@@ -9,7 +9,7 @@ using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 namespace Uber.Migrations
 {
     /// <inheritdoc />
-    public partial class initalDatabase : Migration
+    public partial class addingintialDb : Migration
     {
         /// <inheritdoc />
         protected override void Up(MigrationBuilder migrationBuilder)
@@ -160,75 +160,60 @@ namespace Uber.Migrations
                 });
 
             migrationBuilder.CreateTable(
-                name: "drivers",
+                name: "UberUsers",
                 columns: table => new
                 {
-                    DriverId = table.Column<string>(type: "text", nullable: false),
-                    FirstName = table.Column<string>(type: "character varying(100)", maxLength: 100, nullable: false),
-                    LastName = table.Column<string>(type: "character varying(100)", maxLength: 100, nullable: false),
-                    Email = table.Column<string>(type: "character varying(100)", maxLength: 100, nullable: false),
-                    PhoneNumber = table.Column<string>(type: "character varying(12)", maxLength: 12, nullable: false),
+                    Id = table.Column<string>(type: "text", nullable: false),
+                    rating = table.Column<decimal>(type: "numeric", nullable: true),
+                    NumberOfReviews = table.Column<int>(type: "integer", nullable: false)
+                },
+                constraints: table =>
+                {
+                    table.PrimaryKey("PK_UberUsers", x => x.Id);
+                    table.ForeignKey(
+                        name: "FK_UberUsers_AspNetUsers_Id",
+                        column: x => x.Id,
+                        principalTable: "AspNetUsers",
+                        principalColumn: "Id",
+                        onDelete: ReferentialAction.Cascade);
+                });
+
+            migrationBuilder.CreateTable(
+                name: "Drivers",
+                columns: table => new
+                {
+                    Id = table.Column<string>(type: "text", nullable: false),
                     LicensePlate = table.Column<string>(type: "character varying(12)", maxLength: 12, nullable: false),
                     SSN = table.Column<string>(type: "character varying(14)", maxLength: 14, nullable: false),
                     IsActive = table.Column<bool>(type: "boolean", nullable: false),
-                    isAvailable = table.Column<bool>(type: "boolean", nullable: false),
-                    Rating = table.Column<decimal>(type: "numeric", nullable: true)
+                    isAvailable = table.Column<bool>(type: "boolean", nullable: false)
                 },
                 constraints: table =>
                 {
-                    table.PrimaryKey("PK_drivers", x => x.DriverId);
+                    table.PrimaryKey("PK_Drivers", x => x.Id);
                     table.ForeignKey(
-                        name: "FK_drivers_AspNetUsers_DriverId",
-                        column: x => x.DriverId,
-                        principalTable: "AspNetUsers",
+                        name: "FK_Drivers_UberUsers_Id",
+                        column: x => x.Id,
+                        principalTable: "UberUsers",
                         principalColumn: "Id",
                         onDelete: ReferentialAction.Cascade);
                 });
 
             migrationBuilder.CreateTable(
-                name: "passengers",
+                name: "Passengers",
                 columns: table => new
                 {
-                    PassngerId = table.Column<string>(type: "text", nullable: false),
-                    FirstName = table.Column<string>(type: "character varying(100)", maxLength: 100, nullable: false),
-                    LastName = table.Column<string>(type: "character varying(100)", maxLength: 100, nullable: false),
-                    Email = table.Column<string>(type: "character varying(100)", maxLength: 100, nullable: false),
-                    PhoneNumber = table.Column<string>(type: "character varying(12)", maxLength: 12, nullable: false),
-                    rating = table.Column<decimal>(type: "numeric", nullable: true),
-                    CancellationCount = table.Column<int>(type: "integer", nullable: false)
+                    Id = table.Column<string>(type: "text", nullable: false),
+                    CancellationCount = table.Column<int>(type: "integer", nullable: false),
+                    paymentMethod = table.Column<string>(type: "text", nullable: true)
                 },
                 constraints: table =>
                 {
-                    table.PrimaryKey("PK_passengers", x => x.PassngerId);
+                    table.PrimaryKey("PK_Passengers", x => x.Id);
                     table.ForeignKey(
-                        name: "FK_passengers_AspNetUsers_PassngerId",
-                        column: x => x.PassngerId,
-                        principalTable: "AspNetUsers",
-                        principalColumn: "Id",
-                        onDelete: ReferentialAction.Cascade);
-                });
-
-            migrationBuilder.CreateTable(
-                name: "RefreshTokens",
-                columns: table => new
-                {
-                    Id = table.Column<int>(type: "integer", nullable: false)
-                        .Annotation("Npgsql:ValueGenerationStrategy", NpgsqlValueGenerationStrategy.IdentityByDefaultColumn),
-                    UserId = table.Column<string>(type: "text", nullable: false),
-                    Token = table.Column<string>(type: "text", nullable: false),
-                    JwtId = table.Column<string>(type: "text", nullable: false),
-                    isUsed = table.Column<bool>(type: "boolean", nullable: false),
-                    isRevoked = table.Column<bool>(type: "boolean", nullable: false),
-                    AddedDate = table.Column<DateTime>(type: "timestamp with time zone", nullable: false),
-                    ExpiresDate = table.Column<DateTime>(type: "timestamp with time zone", nullable: false)
-                },
-                constraints: table =>
-                {
-                    table.PrimaryKey("PK_RefreshTokens", x => x.Id);
-                    table.ForeignKey(
-                        name: "FK_RefreshTokens_AspNetUsers_UserId",
-                        column: x => x.UserId,
-                        principalTable: "AspNetUsers",
+                        name: "FK_Passengers_UberUsers_Id",
+                        column: x => x.Id,
+                        principalTable: "UberUsers",
                         principalColumn: "Id",
                         onDelete: ReferentialAction.Cascade);
                 });
@@ -238,32 +223,31 @@ namespace Uber.Migrations
                 columns: table => new
                 {
                     TripId = table.Column<Guid>(type: "uuid", nullable: false),
-                    DriverId = table.Column<string>(type: "text", nullable: false),
-                    PassengerId = table.Column<string>(type: "text", nullable: false),
+                    DriverId = table.Column<string>(type: "text", nullable: true),
+                    PassengerId = table.Column<string>(type: "text", nullable: true),
                     source = table.Column<string>(type: "text", nullable: false),
                     destination = table.Column<string>(type: "text", nullable: false),
                     Distance = table.Column<decimal>(type: "numeric", nullable: false),
                     BasePrice = table.Column<decimal>(type: "numeric", nullable: false),
                     FinalPrice = table.Column<decimal>(type: "numeric", nullable: false),
-                    Status = table.Column<string>(type: "text", nullable: false),
+                    Status = table.Column<string>(type: "character varying(50)", maxLength: 50, nullable: false),
                     RequestTime = table.Column<DateTime>(type: "timestamp with time zone", nullable: false),
                     StartTime = table.Column<DateTime>(type: "timestamp with time zone", nullable: true),
-                    EndTime = table.Column<DateTime>(type: "timestamp with time zone", nullable: true),
-                    CancellationFee = table.Column<decimal>(type: "numeric", nullable: false)
+                    EndTime = table.Column<DateTime>(type: "timestamp with time zone", nullable: true)
                 },
                 constraints: table =>
                 {
                     table.PrimaryKey("PK_trips", x => x.TripId);
                     table.ForeignKey(
-                        name: "FK_trips_drivers_DriverId",
+                        name: "FK_trips_Drivers_DriverId",
                         column: x => x.DriverId,
-                        principalTable: "drivers",
-                        principalColumn: "DriverId");
+                        principalTable: "Drivers",
+                        principalColumn: "Id");
                     table.ForeignKey(
-                        name: "FK_trips_passengers_PassengerId",
+                        name: "FK_trips_Passengers_PassengerId",
                         column: x => x.PassengerId,
-                        principalTable: "passengers",
-                        principalColumn: "PassngerId");
+                        principalTable: "Passengers",
+                        principalColumn: "Id");
                 });
 
             migrationBuilder.CreateTable(
@@ -272,14 +256,21 @@ namespace Uber.Migrations
                 {
                     CancellationId = table.Column<Guid>(type: "uuid", nullable: false),
                     TripId = table.Column<Guid>(type: "uuid", nullable: false),
-                    cancelledBy = table.Column<string>(type: "character varying(50)", maxLength: 50, nullable: false),
-                    Reason = table.Column<string>(type: "text", nullable: false),
+                    Fee = table.Column<decimal>(type: "numeric", nullable: false),
+                    CancelledBy = table.Column<string>(type: "text", nullable: false),
+                    Reason = table.Column<string>(type: "text", nullable: true),
                     IsRefunded = table.Column<bool>(type: "boolean", nullable: false),
                     CancellationTime = table.Column<DateTime>(type: "timestamp with time zone", nullable: false)
                 },
                 constraints: table =>
                 {
                     table.PrimaryKey("PK_cancellations", x => x.CancellationId);
+                    table.ForeignKey(
+                        name: "FK_cancellations_AspNetUsers_CancelledBy",
+                        column: x => x.CancelledBy,
+                        principalTable: "AspNetUsers",
+                        principalColumn: "Id",
+                        onDelete: ReferentialAction.Cascade);
                     table.ForeignKey(
                         name: "FK_cancellations_trips_TripId",
                         column: x => x.TripId,
@@ -294,6 +285,7 @@ namespace Uber.Migrations
                 {
                     ReviewId = table.Column<Guid>(type: "uuid", nullable: false),
                     TripId = table.Column<Guid>(type: "uuid", nullable: false),
+                    type = table.Column<string>(type: "character varying(50)", maxLength: 50, nullable: false),
                     Rating = table.Column<int>(type: "integer", nullable: false),
                     Comment = table.Column<string>(type: "text", nullable: false)
                 },
@@ -308,12 +300,40 @@ namespace Uber.Migrations
                         onDelete: ReferentialAction.Cascade);
                 });
 
+            migrationBuilder.CreateTable(
+                name: "tenders",
+                columns: table => new
+                {
+                    TenderId = table.Column<Guid>(type: "uuid", nullable: false),
+                    TripId = table.Column<Guid>(type: "uuid", nullable: false),
+                    DriverId = table.Column<string>(type: "text", nullable: false),
+                    TenderTime = table.Column<DateTime>(type: "timestamp with time zone", nullable: false, defaultValueSql: "CURRENT_TIMESTAMP"),
+                    OfferedPrice = table.Column<decimal>(type: "numeric", nullable: false),
+                    staute = table.Column<string>(type: "character varying(50)", maxLength: 50, nullable: false)
+                },
+                constraints: table =>
+                {
+                    table.PrimaryKey("PK_tenders", x => x.TenderId);
+                    table.ForeignKey(
+                        name: "FK_tenders_Drivers_DriverId",
+                        column: x => x.DriverId,
+                        principalTable: "Drivers",
+                        principalColumn: "Id",
+                        onDelete: ReferentialAction.Cascade);
+                    table.ForeignKey(
+                        name: "FK_tenders_trips_TripId",
+                        column: x => x.TripId,
+                        principalTable: "trips",
+                        principalColumn: "TripId",
+                        onDelete: ReferentialAction.Cascade);
+                });
+
             migrationBuilder.InsertData(
                 table: "AspNetRoles",
                 columns: new[] { "Id", "ConcurrencyStamp", "Name", "NormalizedName" },
                 values: new object[,]
                 {
-                    { "3848fb35-56df-4772-91ef-d5c16c005d79", "3848fb35-56df-4772-91ef-d5c16c005d79", "User", "USER" },
+                    { "3848fb35-56df-4772-91ef-d5c16c005d79", "3848fb35-56df-4772-91ef-d5c16c005d79", "Passenger", "PASSENGER" },
                     { "59ed7de2-10a3-417d-9255-e83e16363d16", "59ed7de2-10a3-417d-9255-e83e16363d16", "Driver", "DRIVER" }
                 });
 
@@ -355,55 +375,40 @@ namespace Uber.Migrations
                 unique: true);
 
             migrationBuilder.CreateIndex(
-                name: "IX_Cancellations_TripId",
+                name: "IX_cancellations_CancelledBy",
                 table: "cancellations",
-                column: "TripId",
-                unique: true);
+                column: "CancelledBy");
 
             migrationBuilder.CreateIndex(
-                name: "IX_Drivers_Email",
-                table: "drivers",
-                column: "Email",
-                unique: true);
+                name: "IX_Cancellations_TripId",
+                table: "cancellations",
+                column: "TripId");
 
             migrationBuilder.CreateIndex(
                 name: "IX_Drivers_LicensePlate",
-                table: "drivers",
+                table: "Drivers",
                 column: "LicensePlate",
                 unique: true);
 
             migrationBuilder.CreateIndex(
-                name: "IX_Drivers_PhoneNumber",
-                table: "drivers",
-                column: "PhoneNumber",
-                unique: true);
-
-            migrationBuilder.CreateIndex(
                 name: "IX_Drivers_SSN",
-                table: "drivers",
+                table: "Drivers",
                 column: "SSN",
                 unique: true);
 
             migrationBuilder.CreateIndex(
-                name: "IX_Passengers_Email",
-                table: "passengers",
-                column: "Email",
-                unique: true);
-
-            migrationBuilder.CreateIndex(
-                name: "IX_Passengers_PhoneNumber",
-                table: "passengers",
-                column: "PhoneNumber",
-                unique: true);
-
-            migrationBuilder.CreateIndex(
-                name: "IX_RefreshTokens_UserId",
-                table: "RefreshTokens",
-                column: "UserId");
-
-            migrationBuilder.CreateIndex(
                 name: "IX_Reviews_TripId",
                 table: "reviews",
+                column: "TripId");
+
+            migrationBuilder.CreateIndex(
+                name: "IX_tenders_DriverId",
+                table: "tenders",
+                column: "DriverId");
+
+            migrationBuilder.CreateIndex(
+                name: "IX_tenders_TripId",
+                table: "tenders",
                 column: "TripId");
 
             migrationBuilder.CreateIndex(
@@ -439,10 +444,10 @@ namespace Uber.Migrations
                 name: "cancellations");
 
             migrationBuilder.DropTable(
-                name: "RefreshTokens");
+                name: "reviews");
 
             migrationBuilder.DropTable(
-                name: "reviews");
+                name: "tenders");
 
             migrationBuilder.DropTable(
                 name: "AspNetRoles");
@@ -451,10 +456,13 @@ namespace Uber.Migrations
                 name: "trips");
 
             migrationBuilder.DropTable(
-                name: "drivers");
+                name: "Drivers");
 
             migrationBuilder.DropTable(
-                name: "passengers");
+                name: "Passengers");
+
+            migrationBuilder.DropTable(
+                name: "UberUsers");
 
             migrationBuilder.DropTable(
                 name: "AspNetUsers");

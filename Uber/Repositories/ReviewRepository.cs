@@ -1,5 +1,4 @@
 ﻿using Microsoft.EntityFrameworkCore;
-using System.Data.Entity;
 using Uber.Data;
 using Uber.Models.Domain;
 using Uber.Repositories.Interfaces;
@@ -27,6 +26,11 @@ namespace Uber.Repositories
             {
                 throw new Exception("Failed to add review");
             }
+        }
+
+        public async Task<bool> getIfThereReviewForSameTrip(Guid tripId, string UserId)
+        {
+            return await _db.reviews.AnyAsync(r => r.TripId == tripId && r.ReviewerId == UserId);
         }
 
         public async Task<Review?> getReviewById(Guid Rid)

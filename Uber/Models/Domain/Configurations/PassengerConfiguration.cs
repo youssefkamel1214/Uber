@@ -7,31 +7,16 @@ namespace Uber.Models.Domain.Configurations
     {
         void IEntityTypeConfiguration<Passenger>.Configure(EntityTypeBuilder<Passenger> builder)
         {
-            builder.HasKey(p => p.PassngerId);
-            builder.HasOne(p => p.User)
-                .WithOne()
-                .HasForeignKey<Passenger>(p => p.PassngerId)
-                .OnDelete(DeleteBehavior.Cascade);
-
-            builder.Property(p => p.FirstName)
-                .IsRequired()
-                .HasMaxLength(100);
-            builder.Property(p => p.LastName)
-            .IsRequired()
-            .HasMaxLength(100);
-            builder.Property(p => p.Email)
-                .IsRequired()
-                .HasMaxLength(100);
-            builder.Property(p => p.PhoneNumber)
-                .IsRequired()
-                .HasMaxLength(12);
-            builder.HasIndex(p => p.Email)
-                .IsUnique()
-                .HasDatabaseName("IX_Passengers_Email");
-            builder.HasIndex(p => p.PhoneNumber)
-                .IsUnique()
-                .HasDatabaseName("IX_Passengers_PhoneNumber");
-            builder.Property(p=>p.rating).IsRequired(false);
+            builder.OwnsOne(p => p.Home, h =>
+            {
+                h.Property(p => p.Longtitde).HasColumnName("HomeLongitude");
+                h.Property(p => p.Latitude).HasColumnName("HomeLatitude");
+            });
+            builder.OwnsOne(p => p.Work, h =>
+            {
+                h.Property(p => p.Longtitde).HasColumnName("WorkLongitude");
+                h.Property(p => p.Latitude).HasColumnName("WorkLatitude");
+            });
         }
     }
 }

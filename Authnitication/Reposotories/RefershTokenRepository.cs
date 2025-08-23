@@ -1,6 +1,7 @@
 ﻿using Authnitication.Database;
 using Authnitication.Models.Domain;
 using Authnitication.Reposotories.interfaces;
+using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
 using System;
 using System.Collections.Generic;
@@ -10,12 +11,13 @@ using System.Threading.Tasks;
 
 namespace Authnitication.Reposotories
 {
-    public class RefershTokenRepository : IRefershTokenReposotiry
-      
-    {
-        private readonly AuthDatabase _authDatabase;
+    public class RefershTokenRepository<TDBataBase> : IRefershTokenReposotiry<TDBataBase>
+         where TDBataBase : DbContext, IRefershTokenDataBase
 
-        public RefershTokenRepository(AuthDatabase authDatabase)
+    {
+        private readonly TDBataBase _authDatabase;
+
+        public RefershTokenRepository(TDBataBase authDatabase)
         {
             _authDatabase = authDatabase;
         }

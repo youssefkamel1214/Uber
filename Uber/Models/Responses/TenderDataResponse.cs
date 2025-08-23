@@ -2,6 +2,7 @@
 {
     public class TenderDataResponse
     {
+        public Guid TenderId { get; set; }
         public string DriverName { get; set; }
         public DateTime ExpiryTime { get; set; }
         public decimal OfferedPrice { get; set; }

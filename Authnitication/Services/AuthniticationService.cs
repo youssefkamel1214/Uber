@@ -1,9 +1,11 @@
-﻿using Authnitication.Models.Domain;
+﻿using Authnitication.Database;
+using Authnitication.Models.Domain;
 using Authnitication.Models.Responses;
 using Authnitication.Reposotories.interfaces;
 using Authnitication.Services.Interfaces;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Identity.Data;
+using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
 using Microsoft.IdentityModel.Tokens;
 using System;
@@ -18,14 +20,17 @@ using System.Threading.Tasks;
 
 namespace Authnitication.Services
 {
-    public class AuthniticationService : IAuthniticationService
+    public class AuthniticationService<TUser,TDataBase> : IAuthniticationService<TUser,TDataBase>
+        where TUser : IdentityUser
+        where TDataBase : DbContext, IRefershTokenDataBase
     {
         private readonly IConfiguration _configuration;
-        private readonly IRefershTokenReposotiry _refershtokenReposiroty;
-        private readonly IUserIdentityAuthincation _userIdentityAuthincation;
+        private readonly IRefershTokenReposotiry<TDataBase> _refershtokenReposiroty;
+        private readonly IUserIdentityAuthincation<TUser> _userIdentityAuthincation;
         private readonly TokenValidationParameters _tokenValidationParameters;
 
-        public AuthniticationService(IConfiguration configuration, IRefershTokenReposotiry refershtokenReposiroty, IUserIdentityAuthincation userIdentityAuthincation, TokenValidationParameters tokenValidationParameters)
+        public AuthniticationService(IConfiguration configuration, IRefershTokenReposotiry<TDataBase> refershtokenReposiroty,
+            IUserIdentityAuthincation<TUser> userIdentityAuthincation, TokenValidationParameters tokenValidationParameters)
         {
             _configuration = configuration;
             _refershtokenReposiroty = refershtokenReposiroty;
@@ -33,13 +38,13 @@ namespace Authnitication.Services
             _tokenValidationParameters = tokenValidationParameters;
         }
 
-        public async Task<AuthResult> CreateUserAsync(string userEmail, string password, string role,Func<string,Task<bool>>createprofile)
+        public async Task<AuthResult> CreateUserAsync(TUser userdata, string password, string role)
         {
             try
             {
 
-                
-                var identityresult = await _userIdentityAuthincation.createUser(userEmail, password, role, createprofile);
+               
+                var identityresult = await _userIdentityAuthincation.createUser(userdata, password, role);
                 if (!identityresult.Succeeded)
                 {
                     return new AuthResult()
@@ -48,12 +53,8 @@ namespace Authnitication.Services
                         success = false
                     };
                 }
-                var user = new IdentityUser
-                {
-                    UserName =userEmail,
-                    Email = userEmail
-                };
-                var result = await signInUser(userEmail,password);
+               
+                var result = await signInUser(userdata.Email!,password);
                 return result;
             }
             catch (Exception ex)
@@ -90,9 +91,9 @@ namespace Authnitication.Services
                 }
                 var jwtSecurityToken = validatedToken as JwtSecurityToken;
                 var claims = jwtSecurityToken?.Claims;
-                var emailClaim = claims?.FirstOrDefault(c => c.Type == JwtRegisteredClaimNames.Email);
-                string? dateinput = emailClaim?.Value.Split(",,")[1];
-                var expiryDateTime = DateTime.Parse(dateinput);
+                var email = claims?.FirstOrDefault(c=>c.Type== JwtRegisteredClaimNames.Email)!.Value;
+                var expiryClaim = claims?.FirstOrDefault(c => c.Type == ClaimTypes.Expiration);
+                var expiryDateTime = DateTime.Parse(expiryClaim.Value);
                 if (expiryDateTime > DateTime.UtcNow)
                 {
                     return new AuthResult
@@ -111,7 +112,7 @@ namespace Authnitication.Services
                         Error = new List<string> { "Invalid Token" }
                     };
                 }
-                if (storedToken.isUsed) 
+                if (storedToken.isUsed)
                 {
                     return new AuthResult
                     {
@@ -139,7 +140,7 @@ namespace Authnitication.Services
                 }
                 storedToken.isUsed = true;
                 await  _refershtokenReposiroty.UpdateRefreshTokenAsync(storedToken);
-                var dbuser = await _userIdentityAuthincation.FindByIdAsync(storedToken.UserId);
+                var dbuser = await _userIdentityAuthincation.FindByEmailAsync(email);
                 var roles = await _userIdentityAuthincation.GetUserRolesAsync(dbuser);
                 return await GenerateJwtToken(dbuser,roles);
 
@@ -163,7 +164,7 @@ namespace Authnitication.Services
         {
             try 
             {
-                IdentityUser? user = await _userIdentityAuthincation.signin(userEmail,password);
+                TUser? user = await _userIdentityAuthincation.signin(userEmail,password);
                 if (user == null)
                 {
                     return new AuthResult()
@@ -218,7 +219,7 @@ namespace Authnitication.Services
             var guid = Guid.NewGuid().ToString();
             var claims = new List<Claim>
             {
-                    new Claim(JwtRegisteredClaimNames.Email,$"{user.Id},,{expirydateTime.ToString()}"),
+                    new Claim(JwtRegisteredClaimNames.Email,user.Email),
                     new Claim(JwtRegisteredClaimNames.Sub, user.Email),
                     new Claim(JwtRegisteredClaimNames.Jti,guid ),
             };
@@ -226,6 +227,8 @@ namespace Authnitication.Services
             {
                 claims.Add(new Claim(ClaimTypes.Role, role));
             }
+            claims.Add(new Claim(ClaimTypes.Expiration,expirydateTime.ToString() ));
+            claims.Add(new Claim("UID", user.Id.ToString()));
             var tokenDescriptor = new SecurityTokenDescriptor
             {
                 Subject = new ClaimsIdentity(claims),
@@ -241,7 +244,6 @@ namespace Authnitication.Services
 
             var refreshToken = new RefreshToken
             {
-                UserId = user.Id,
                 Token = RandomString(35) + Guid.NewGuid(),
                 JwtId = token.Id,
                 isUsed = false,
@@ -269,19 +271,6 @@ namespace Authnitication.Services
                 Select(x => x[random.Next(x.Length)]).ToArray());
         }
 
-        public async Task<string> getUID(string token)
-        {
-            var jwtHandler = new JwtSecurityTokenHandler();
-            var refreshValidationParams = _tokenValidationParameters.Clone();
-            refreshValidationParams.ValidateLifetime = false;
-            refreshValidationParams.ValidateIssuer = false;
-            ClaimsPrincipal tokeninverification = jwtHandler.
-                ValidateToken(token, refreshValidationParams,
-                out var validatedToken);
-            var claims = (validatedToken as JwtSecurityToken)?.Claims;
-            var emailClaim = claims?.FirstOrDefault(c => c.Type == JwtRegisteredClaimNames.Email);
-            string dateinput = emailClaim?.Value.Split(",,")[0];
-            return dateinput;
-        }
+       
     }
 }

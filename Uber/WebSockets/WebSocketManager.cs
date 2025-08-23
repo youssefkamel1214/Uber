@@ -7,22 +7,44 @@ namespace Uber.WebSockets
     public class webSocketManager
     {
 
-        private ConcurrentDictionary<string, IWebSocketService> _connections = new ConcurrentDictionary<string, IWebSocketService>();
+        private ConcurrentDictionary<string,List< IWebSocketService>> _connections = new ConcurrentDictionary<string, List<IWebSocketService>>();
         private ConcurrentDictionary<string, IWebSocketService> _driverConnections = new ConcurrentDictionary<string, IWebSocketService>();
 
 
-        public void AddConnection(string guid, IWebSocketService webSockets)
+        public void AddConnectionOnTripId(string guid, IWebSocketService webSockets)
         {
-            _connections.TryAdd(guid, webSockets);
+            if (!_connections.ContainsKey(guid))
+                _connections.TryAdd(guid, [webSockets]);
+            else 
+            {
+                _connections[guid].Add(webSockets);
+            }
         }
         public void AddConnectionDriver(string guid, IWebSocketService webSockets)
         {
             _driverConnections.TryAdd(guid, webSockets);
         }
-        public void RemoveConnection(string guid)
+        public void RemoveConnectionOnTrip(string guid, IWebSocketService _webSocket)
         {
-            _connections.TryRemove(guid, out IWebSocketService? _web);
-            _web.closeConnection();
+
+            if (!_connections.ContainsKey(guid))
+                return;
+
+            foreach (var _web in _connections[guid])
+                if (_web.Equals(_webSocket)) 
+                { 
+                    _web.closeConnection();
+                    _connections[guid].Remove(_web);
+                    break;
+                }
+            if (_connections[guid].Count==0)
+                _connections.TryRemove(guid, out List<IWebSocketService>? _webSocketList);
+        }
+        public void RemoveAllConnectionOnTrip(string guid)
+        {
+            _connections.TryRemove(guid, out List< IWebSocketService>? _webSocketList);
+            foreach(var _web in _webSocketList)
+             _web.closeConnection();
         }
         public void RemoveConnectionDriver(string guid)
         {
@@ -32,12 +54,13 @@ namespace Uber.WebSockets
         }
         public async Task BroadcastdataToTripChannel(string guid,object data)
         {
-            if (_connections.TryGetValue(guid, out var webSocketService))
+            if (_connections.TryGetValue(guid, out var webSocketList))
             {
-                await webSocketService.Broadcastdata(data);
+                foreach(var webSocketService in webSocketList)
+                 await webSocketService.Broadcastdata(data);
             }
         }
-        public async Task BroadcastdataToDriver( object data)
+        public async Task BroadcastdataToDrivers( object data)
         {
             foreach (var webSocket in _driverConnections.Values) 
             {
@@ -45,6 +68,12 @@ namespace Uber.WebSockets
                 if(webSocket == null) continue;
                 await webSocket.Broadcastdata(data);
             }
+        }
+        public async Task BroadcastdataToDriver(string driverId,object data)
+        {
+          if(_driverConnections.ContainsKey(driverId))
+            await _driverConnections[driverId].Broadcastdata(data);
+            
         }
     }
 }

@@ -1,4 +1,5 @@
-﻿using Uber.Utils;
+﻿using System.Text.Json.Serialization;
+using Uber.Utils;
 
 namespace Uber.Models.Domain
 {
@@ -7,15 +8,17 @@ namespace Uber.Models.Domain
         public Guid TripId { get; set; } = Guid.NewGuid();
         public string? DriverId { get; set; }
         public string? PassengerId { get; set; }
-        public string source { get; set; }
-        public string destination { get; set; }
+        public Point Source { get; set; }
+        public Point Destination { get; set; }
         public Decimal Distance { get; set; }
         public Decimal BasePrice { get; set; }
         public Decimal FinalPrice { get; set; }
+        [JsonConverter(typeof(JsonStringEnumConverter))]
         public TripStatue Status { get; set; } 
         public DateTime RequestTime { get; set; }
         public DateTime? StartTime { get; set; }
         public DateTime? EndTime { get; set; }
-        public decimal CancellationFee { get; set; }
+        public virtual Passenger Passenger { get; set; }
+        public virtual Driver Driver { get; set; }
     }
 }

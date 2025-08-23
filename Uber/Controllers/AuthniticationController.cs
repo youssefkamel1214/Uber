@@ -2,6 +2,7 @@
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Identity.Data;
 using Microsoft.AspNetCore.Mvc;
+using Uber.Data;
 using Uber.Models.Domain;
 using Uber.Models.DTO.Reqeusts;
 using Uber.Repositories.Interfaces;
@@ -12,11 +13,11 @@ namespace Uber.Controllers
     [ApiController]
     public class AuthniticationController : ControllerBase
     {
-        private readonly IAuthniticationService _authService;
+        private readonly IAuthniticationService<UberUser,UberAuthDatabase> _authService;
         private readonly IDriverRepository _driverRepository;
         private readonly IPassengerRepository _passengerRepository;
 
-        public AuthniticationController(IAuthniticationService authService, IDriverRepository driverRepository, IPassengerRepository passengerRepository)
+        public AuthniticationController(IAuthniticationService<UberUser, UberAuthDatabase> authService, IDriverRepository driverRepository, IPassengerRepository passengerRepository)
         {
             _authService = authService;
             _driverRepository = driverRepository;
@@ -31,17 +32,17 @@ namespace Uber.Controllers
             // For now, we will just return a success message
             Driver driver = new Driver
             {
-                FirstName = registerRequest.FirstName,
-                LastName = registerRequest.LastName,
+                Id = Guid.NewGuid().ToString(),
+                UserName = registerRequest.FirstName+"_"+registerRequest.LastName,
                 Email = registerRequest.Email,
                 PhoneNumber = registerRequest.PhoneNumber,
                 LicensePlate = registerRequest.LicensePlate,
                 SSN = registerRequest.SSN
             };
-            var  result = await _authService.CreateUserAsync(registerRequest.Email, registerRequest.password, "Driver", async (applicationuserid) => { 
-                driver.DriverId = applicationuserid;
-                return await _driverRepository.createDriverAsync(driver); // Simulating profile creation success
-            });
+            
+            var  result = await _authService.CreateUserAsync(
+                driver, 
+                registerRequest.password, "Driver");
             if (result.success)
             {
                 await _driverRepository.MarkDriverIsActive(registerRequest.Email);
@@ -60,15 +61,11 @@ namespace Uber.Controllers
             // For now, we will just return a success message
             Passenger passenger = new Passenger
             {
-                FirstName = registerRequest.FirstName,
-                LastName = registerRequest.LastName,
+                UserName = registerRequest.FirstName+"_"+ registerRequest.LastName,
                 Email = registerRequest.Email,
                 PhoneNumber = registerRequest.PhoneNumber, 
             };
-            var result = await _authService.CreateUserAsync(registerRequest.Email, registerRequest.Password, "Passenger", async (applicationuserid) => {
-                passenger.PassngerId = applicationuserid;
-                return await _passengerRepository.createPassengerAsync(passenger); // Simulating profile creation success
-            });
+            var result = await _authService.CreateUserAsync(passenger, registerRequest.Password, "Passenger");
             if (result.success)
             {
                 return Ok(result);

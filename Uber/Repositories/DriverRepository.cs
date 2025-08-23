@@ -1,4 +1,5 @@
-﻿using Microsoft.EntityFrameworkCore;
+﻿using Microsoft.AspNetCore.Identity;
+using Microsoft.EntityFrameworkCore;
 using Uber.Data;
 using Uber.Models.Domain;
 using Uber.Repositories.Interfaces;
@@ -6,6 +7,7 @@ using Uber.Repositories.Interfaces;
 namespace Uber.Repositories
 {
     public class DriverRepository : IDriverRepository
+        
     {
         private readonly UberAuthDatabase _uberAuthDatabase;
         public DriverRepository(UberAuthDatabase uberAuthDatabase)
@@ -14,7 +16,7 @@ namespace Uber.Repositories
         }
         public async Task<bool> createDriverAsync(Driver driver)
         {
-            var dr= await _uberAuthDatabase.drivers.AddAsync(driver);
+            var dr= await _uberAuthDatabase.UberUsers.AddAsync(driver);
             if (dr == null)
             {
                 throw new InvalidOperationException("Driver could not be added.");
@@ -37,7 +39,7 @@ namespace Uber.Repositories
         public async Task<Driver?> getDriverByIdAsync(string driverId)
         {
             var driver = await _uberAuthDatabase
-                .drivers.FirstOrDefaultAsync(d => d.DriverId == driverId);
+                .UberUsers.OfType<Driver>().FirstOrDefaultAsync(d => d.Id == driverId);
             return driver;
         }
 
@@ -45,13 +47,13 @@ namespace Uber.Repositories
         {
 
             var driver = await _uberAuthDatabase
-                .drivers.FirstOrDefaultAsync(d => d.Email == email);
+                .UberUsers.OfType<Driver>().FirstOrDefaultAsync(d => d.Email == email);
             if (driver != null) 
             {
                 driver.IsActive = true;                
-                _uberAuthDatabase.drivers.Update(driver);
+                _uberAuthDatabase.UberUsers.Update(driver);
                 await _uberAuthDatabase.SaveChangesAsync();
-                await MarkDriverIsAvailble(driver.DriverId);
+                await MarkDriverIsAvailble(driver.Id);
             }
             return driver;
         }
@@ -59,12 +61,12 @@ namespace Uber.Repositories
         public async Task<bool> MarkDriverIsAvailble(string driverId)
         {
             var driver = await _uberAuthDatabase
-               .drivers.FirstOrDefaultAsync(d => d.DriverId == driverId);
+               .UberUsers.OfType<Driver>().FirstOrDefaultAsync(d => d.Id == driverId);
             if (driver != null)
             {
                 driver.isAvailable = ! await  _uberAuthDatabase.trips.AnyAsync(tr => !(tr.Status == Utils.TripStatue.TripCancelled ||
-                tr.Status == Utils.TripStatue.TripCompleted) && tr.DriverId == driver.DriverId);
-                _uberAuthDatabase.drivers.Update(driver);
+                tr.Status == Utils.TripStatue.TripCompleted) && tr.DriverId == driver.Id);
+                _uberAuthDatabase.UberUsers.Update(driver);
                 await _uberAuthDatabase.SaveChangesAsync();
                 return driver.isAvailable;
             }
@@ -74,15 +76,15 @@ namespace Uber.Repositories
         public async Task<bool> updateDriver(Driver driver)
         {
             var exsitingDriver = await _uberAuthDatabase
-                       .drivers.FirstOrDefaultAsync(d => d.DriverId == driver.DriverId);
+                       .UberUsers.OfType<Driver>().FirstOrDefaultAsync(d => d.Id == driver.Id);
             if (exsitingDriver == null)
             {
                 throw new InvalidOperationException("Driver not found.");
             }
-            exsitingDriver.isAvailable = driver.isAvailable;
-            exsitingDriver.IsActive = driver.IsActive;
-            exsitingDriver.Rating = driver.Rating;
-          return  await _uberAuthDatabase.SaveChangesAsync()>0;
+           exsitingDriver.NumberOfReviews = driver.NumberOfReviews;
+            exsitingDriver.rating = driver.rating;
+            _uberAuthDatabase.UberUsers.Update(exsitingDriver);
+            return  await _uberAuthDatabase.SaveChangesAsync()>0;
         }
     }
 }

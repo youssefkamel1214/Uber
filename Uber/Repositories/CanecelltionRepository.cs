@@ -1,4 +1,4 @@
-﻿using System.Data.Entity;
+﻿using Microsoft.EntityFrameworkCore;
 using Uber.Data;
 using Uber.Models.Domain;
 using Uber.Repositories.Interfaces;
@@ -14,22 +14,16 @@ namespace Uber.Repositories
         }
         public async Task<Cancellation> AddCancellationAsync(Cancellation cancellation)
         {
-            var existingCancellation = await _db.cancellations.FirstOrDefaultAsync(c => c.TripId == cancellation.TripId);
-            if (existingCancellation != null)
-            {
-                throw new Exception("Cancellation already exists for this trip.");
-            }
-            cancellation.CancellationId = Guid.NewGuid();
-            await _db.cancellations.AddAsync(cancellation);
-            var result = await _db.SaveChangesAsync();
-            if (result > 0)
-            {
-                return cancellation;
-            }
-            else
-            {
-                throw new Exception("Failed to add cancellation");
-            }
+                cancellation.CancellationId = Guid.NewGuid();
+                await _db.cancellations.AddAsync(cancellation);
+                var result = await _db.SaveChangesAsync();
+                if (result > 0)
+                {
+                    return cancellation;
+                }
+                else
+                    throw new Exception("could not create Cancelltion");
+
         }
 
         public async Task<List<Cancellation>> getallCanelltionOfPassengerAsync(string passengerId)
@@ -41,7 +35,7 @@ namespace Uber.Repositories
             return cancellations;
         }
 
-        public async Task<Cancellation?> GetCancellationByTripIdAndDriverIdAsync(Guid canelletionId)
+        public async Task<Cancellation?> GetCancellationByIdAsync(Guid canelletionId)
         {
             var existingCancellation = await _db.cancellations.FirstOrDefaultAsync(c => c.CancellationId == canelletionId);
             return existingCancellation;
@@ -50,6 +44,12 @@ namespace Uber.Repositories
         public async Task<Cancellation?> GetCancellationsByTripIdAsync(Guid tripId)
         {
             var existingCancellation = await _db.cancellations.FirstOrDefaultAsync(c => c.TripId == tripId);
+            return existingCancellation;
+        }
+
+        public async Task<Cancellation?> getCancelletionByDriverIAndTripID(string driverId, Guid tripId)
+        {
+            var existingCancellation = await _db.cancellations.FirstOrDefaultAsync(c => c.TripId == tripId&&c.CancelledBy==driverId);
             return existingCancellation;
         }
 

@@ -17,6 +17,7 @@ using Uber.Repositories;
 using Uber.Repositories.Interfaces;
 using Uber.Services;
 using Uber.Services.Interfaces;
+using Uber.Services.Osm;
 using Uber.WebSockets;
 
 namespace Uber
@@ -27,12 +28,11 @@ namespace Uber
         {
             builder.Services.AddDbContext<UberAuthDatabase>(
              options => options.UseNpgsql(builder.Configuration.GetConnectionString("WebApiDatabase")));
-            builder.Services.AddDbContext<AuthDatabase>(
-                options => options.UseNpgsql(builder.Configuration.GetConnectionString("WebApiDatabase")));
-            builder.Services.AddScoped<IRefershTokenReposotiry, RefershTokenRepository>();
-            builder.Services.AddScoped<IUserIdentityAuthincation, UserIdentityAuthincation>();
-            builder.Services.AddScoped<IUserIdentityAuthincation, UserIdentityAuthincation>();
-            builder.Services.AddScoped<IAuthniticationService, AuthniticationService>();
+        
+            builder.Services.AddScoped<IRefershTokenReposotiry<UberAuthDatabase>, RefershTokenRepository<UberAuthDatabase>>();
+            builder.Services.AddScoped<IUserIdentityAuthincation<UberUser>, UserIdentityAuthincation<UberUser>>();
+            builder.Services.AddScoped<IUserIdentityAuthincation<UberUser>, UserIdentityAuthincation<UberUser>>();
+            builder.Services.AddScoped<IAuthniticationService<UberUser,UberAuthDatabase>, AuthniticationService<UberUser, UberAuthDatabase>>();
             builder.Services.AddScoped<IDriverRepository, DriverRepository>(); 
             builder.Services.AddScoped<IPassengerRepository, PassengerRepository>();
             builder.Services.AddScoped<ITripRepository, TripRepository>();
@@ -42,6 +42,11 @@ namespace Uber
             builder.Services.AddScoped<ITripService, TripService>();
             builder.Services.AddScoped<IWebSocketService,WebSocketService>();
             builder.Services.AddSingleton<webSocketManager>();
+            builder.Services.AddScoped<INotificationManger, NotificationManger>();
+            builder.Services.AddHttpClient<IRouteDistanceService, OsmRouteDistanceService>(client =>
+            {
+                client.BaseAddress = new Uri("http://router.project-osrm.org/");
+            });
         }
         public static void addjwtinjectisntions(WebApplicationBuilder builder) {
             var TokenValidationParameters = new Microsoft.IdentityModel.Tokens.TokenValidationParameters
@@ -57,10 +62,10 @@ namespace Uber
                    SymmetricSecurityKey(System.Text.Encoding.UTF8.
                    GetBytes(builder.Configuration["Jwt:Key"]))
             };
-            builder.Services.AddIdentityCore<IdentityUser>()
+            builder.Services.AddIdentityCore<UberUser>()
                .AddRoles<IdentityRole>()
-               .AddTokenProvider<DataProtectorTokenProvider<IdentityUser>>("Uber")
-               .AddEntityFrameworkStores<AuthDatabase>()
+               .AddTokenProvider<DataProtectorTokenProvider<UberUser>>("Uber")
+               .AddEntityFrameworkStores<UberAuthDatabase>()
                .AddDefaultTokenProviders();
             builder.Services.Configure<IdentityOptions>(options => {
                 options.Password.RequireDigit = false;
@@ -95,7 +100,7 @@ namespace Uber
             builder.Services.AddSwaggerGen(options => {
                 options.SwaggerDoc("v1", new Microsoft.OpenApi.Models.OpenApiInfo
                 {
-                    Title = "Nzwalks API",
+                    Title = "Uber API",
                     Version = "v1",
                 });
                 options.AddSecurityDefinition(JwtBearerDefaults.AuthenticationScheme,
@@ -131,8 +136,10 @@ namespace Uber
                 try
                 {
                     var dbContext = services.GetRequiredService<UberAuthDatabase>();
-                    dbContext.Database.Migrate(); // Creates database and tables
-                                                  // OR for migrations: dbContext.Database.Migrate();
+                    dbContext.Database.Migrate(); 
+                   
+                    // Creates database and tables
+                    // OR for migrations: dbContext.Database.Migrate();
                 }
                 catch (Exception ex)
                 {
