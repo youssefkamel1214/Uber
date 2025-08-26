@@ -195,6 +195,8 @@ POST /api/Trip/ConfirmPickUp
 
 POST /api/Trip/CompleteTrip
 
+POST /api/Trip/MakeReview
+
 Tenders
 
 POST /api/Tender/addTender
@@ -207,24 +209,9 @@ POST /api/Tender/AcceptTenderOffer
 
 POST /api/Tender/RejectTenderOffer
 
-Reviews
-
-POST /api/Trip/MakeReview
-Example payload:
-
-{
-  "tripId": "2b1f7b65-81d4-4f1a-9d35-45a67c71b8f2",
-  "rating": 5,
-  "comment": "Smooth ride, great driver!"
-}
-
 💡 Future Improvements
 
-🚀 Mobile app integration
-
 🚦 Trip pricing algorithm
-
-📊 Driver/passenger analytics dashboard
 
 🔔 Push notifications
 
