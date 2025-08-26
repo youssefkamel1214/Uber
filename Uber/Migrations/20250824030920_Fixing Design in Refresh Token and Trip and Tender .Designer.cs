@@ -2,6 +2,7 @@
 using System;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 using Uber.Data;
@@ -11,9 +12,11 @@ using Uber.Data;
 namespace Uber.Migrations
 {
     [DbContext(typeof(UberAuthDatabase))]
-    partial class UberAuthDatabaseModelSnapshot : ModelSnapshot
+    [Migration("20250824030920_Fixing Design in Refresh Token and Trip and Tender ")]
+    partial class FixingDesigninRefreshTokenandTripandTender
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder

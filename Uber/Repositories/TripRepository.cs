@@ -67,7 +67,7 @@ namespace Uber.Repositories
 
         public async Task updateRestOfTripsThathasTenders(Tender tender)
         {
-            await _db.trips.Where(tr => tr.Status == TripStatue.WaitingForConifirmationOnTender &&
+            await _db.trips.Where(tr => tr.BanTimeExires>DateTime.UtcNow &&
             _db.tenders.Any(tend => tend.TenderId != tender.TenderId && tend.DriverId == tender.DriverId)).
             ExecuteUpdateAsync(s=>s.SetProperty(trip=>trip.Status,TripStatue.DriverWaiting));
         }

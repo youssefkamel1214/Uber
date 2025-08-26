@@ -11,12 +11,10 @@ namespace Uber.Repositories
     public class TenderRepository : ITenderRepository
     {
         private readonly UberAuthDatabase _db;
-        private readonly IServiceProvider _serviceProvider;
 
-        public TenderRepository(UberAuthDatabase db, IServiceProvider serviceProvider)
+        public TenderRepository(UberAuthDatabase db)
         {
             _db = db;
-            _serviceProvider = serviceProvider;
         }
 
         public async Task<Tender> AddTender(Tender tender)
@@ -26,7 +24,6 @@ namespace Uber.Repositories
             var result = await _db.SaveChangesAsync();
             if (result > 0)
             {
-             makeTenderExpire(tender);
              return tender;
             }
             else
@@ -38,7 +35,8 @@ namespace Uber.Repositories
         public async Task<List<Tender>> getRestOfTripsThathasTenders(Tender tender)
         {
            var list= await _db.tenders.AsNoTracking().Include(t=>t.Trip)
-                .Where(t => t.TenderId != tender.TenderId && t.DriverId == tender.DriverId)
+                .Where(t => t.TenderId != tender.TenderId && t.DriverId == tender.DriverId&&
+                t.staute == TenderStatue.WaitingForPassenger && t.ExpiresAt > DateTime.UtcNow)
                 .ToListAsync();
             return list;
         }
@@ -52,7 +50,7 @@ namespace Uber.Repositories
         public async Task<List<TenderDataResponse>> GetTendersByTripIdAsync(Guid tripId)
         {
             var list = await _db.tenders.AsNoTracking().Include(t => t.Trip)
-               .Where(t => t.TripId == tripId &&t.staute==TenderStatue.WaitingForPassenger)
+               .Where(t => t.TripId == tripId &&t.staute==TenderStatue.WaitingForPassenger&&t.ExpiresAt>DateTime.UtcNow)
                .Select(t => new TenderDataResponse
                {
                    TenderId = t.TenderId,
@@ -61,7 +59,7 @@ namespace Uber.Repositories
                    DriverRating = t.Driver.rating,
                    DriverPhoneNumber = t.Driver.PhoneNumber!,
                    licensePlate = t.Driver.LicensePlate,
-                   ExpiryTime = t.TenderTime.AddMinutes(5)
+                   ExpiryTime = t.ExpiresAt
 
                })
                .ToListAsync();
@@ -71,71 +69,14 @@ namespace Uber.Repositories
         public async Task<bool> isThereActiveDriverTenderForThisTrip(Guid tripId, string driverId)
         {
             return await _db.tenders.AnyAsync(t=>t.TripId==tripId&&t.DriverId==driverId
-            &&(t.staute==TenderStatue.WaitingForPassenger|| t.staute == TenderStatue.WaitingForDriverConfirimation));
+            &&(t.staute==TenderStatue.WaitingForPassenger|| t.staute == TenderStatue.WaitingForDriverConfirimation)&&t.ExpiresAt>DateTime.UtcNow);
         }
 
-        public async Task makeTenderExpire(Tender tender)
-        {
-            try
-            {
-                using var scope = _serviceProvider.CreateScope();
-                {
-                    var db = scope.ServiceProvider.GetRequiredService<UberAuthDatabase>();
-                    await Task.Delay(5*60 * 1000);
-                    var exstingTender = await db.tenders.FirstOrDefaultAsync(t => t.TenderId == tender.TenderId);
-                    if (exstingTender == null)
-                    {
-                        return;
-                    }
-
-                    if (exstingTender.staute == TenderStatue.WaitingForPassenger)
-                    {
-                        exstingTender.staute = TenderStatue.Expired;
-                        db.tenders.Update(exstingTender);
-                        await db.SaveChangesAsync();
-                    }
-               
-                }
-
-            }
-            catch (Exception ex)
-            {
-                throw ex;
-            }
-        }
-
-        public async Task timeOutTenderConfirm(Tender tender)
-        {
-            try
-            {
-                using var scope = _serviceProvider.CreateScope();
-                {
-                    var db = scope.ServiceProvider.GetRequiredService<UberAuthDatabase>();
-                    await Task.Delay(1000 * 60);
-                    var existingTender = await db.tenders.FirstOrDefaultAsync(t => t.TenderId == tender.TenderId);
-                    var existingtrip = await db.trips.FirstOrDefaultAsync(tr => tr.TripId == tender.TripId);
-                    if (existingTender == null || existingtrip == null)
-                        return;
-                    if (existingtrip.Status == TripStatue.WaitingForConifirmationOnTender && existingTender.staute == TenderStatue.WaitingForDriverConfirimation)
-                    {
-                        existingtrip.Status = TripStatue.DriverWaiting;
-                        db.trips.Update(existingtrip);
-                        existingTender.staute = TenderStatue.Expired;
-                        db.tenders.Update(existingTender);
-                        await db.SaveChangesAsync();
-                    }
-                }
-            }
-            catch (Exception ex)
-            {
-                throw ex;
-            }
-           
-        }
+      
 
         public async Task updateRestOfActiveTenders(Tender tender)
         {
-            await _db.tenders.Where(t => t.TenderId != tender.TenderId && t.DriverId == tender.DriverId).
+            await _db.tenders.Where(t => t.TenderId != tender.TenderId && t.DriverId == tender.DriverId && t.ExpiresAt > DateTime.UtcNow).
                 ExecuteUpdateAsync(s=>s.SetProperty(t=>t.staute,TenderStatue.driverGotAnotherTrip));
         }
 
@@ -144,10 +85,9 @@ namespace Uber.Repositories
             var exsitingtender = await _db.tenders.FirstOrDefaultAsync(t => t.TripId == tender.TripId && t.DriverId == tender.DriverId);
             exsitingtender.staute = tender.staute;
             exsitingtender.OfferedPrice = tender.OfferedPrice;
+            exsitingtender.ExpiresAt = tender.ExpiresAt;
             _db.tenders.Update(exsitingtender);
             var res = await _db.SaveChangesAsync() > 0;
-            if (res && tender.staute == TenderStatue.WaitingForDriverConfirimation)
-                timeOutTenderConfirm(tender);
             return res ;
         }
     }

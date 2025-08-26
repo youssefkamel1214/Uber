@@ -72,7 +72,15 @@ namespace Uber.Services
                     Error = [$"invalid Trip Statue :{existingtrip.Status}"]
                 };
             }
-            if (existingTender.staute==TenderStatue.Expired)
+            if(existingtrip.BanTimeExires>DateTime.UtcNow)
+            {
+                return new ApiResponse
+                {
+                    statue = HttpStatusCode.Gone,
+                    Error = [$"You Cant Accept Any Tender for 60 Socends until Confirmation Times is up"]
+                };
+            }
+            if (existingTender.ExpiresAt<=DateTime.UtcNow)
             {
                 return new ApiResponse
                 {
@@ -86,6 +94,7 @@ namespace Uber.Services
                 if (!driver.IsActive ||! driver.isAvailable) 
                 {
                     existingTender.staute= TenderStatue.driverGotAnotherTrip;
+                    existingTender.ExpiresAt= DateTime.UtcNow.AddMinutes(1);
                     await _tenderRepository.updateTender(existingTender);
                     return new ApiResponse
                     {
@@ -98,7 +107,7 @@ namespace Uber.Services
                 {
                     existingTender.staute=TenderStatue.WaitingForDriverConfirimation;
                     await _tenderRepository.updateTender(existingTender);
-                    existingtrip.Status = TripStatue.WaitingForConifirmationOnTender;
+                    existingtrip.BanTimeExires= DateTime.UtcNow.AddSeconds(55);
                     await _tripRepository.updatetripAsync(existingtrip);
                     var datatoSent = new Dictionary<string, object>();
                     datatoSent.Add("Tender Id", existingTender.TenderId);
@@ -330,7 +339,7 @@ namespace Uber.Services
                     Error = [$"Trip not found on id {tender.TripId}"]
                 };
             }
-            if(existingtrip.Status != TripStatue.DriverWaiting&& existingtrip.Status != TripStatue.WaitingForConifirmationOnTender)
+            if(existingtrip.Status != TripStatue.DriverWaiting)
             {
                 return new ApiResponse
                 {
@@ -372,7 +381,7 @@ namespace Uber.Services
                     Error  = [$"Offered price cant be less than {existingtrip.BasePrice}"]
                 };
             }
-
+            tender.ExpiresAt=DateTime.UtcNow.AddMinutes(5);
             var createdTender = await  _tenderRepository.AddTender(tender);
             createdTender.Trip = null;
             createdTender.Driver = null;
@@ -383,7 +392,7 @@ namespace Uber.Services
                 DriverName = driver.UserName,
                 DriverRating = driver.rating,
                 OfferedPrice = tender.OfferedPrice,
-                ExpiryTime = tender.TenderTime.ToLocalTime().AddMinutes(5),
+                ExpiryTime = tender.ExpiresAt.ToLocalTime(),
                 DriverPhoneNumber = driver.PhoneNumber,
                 licensePlate = driver.LicensePlate
             };
@@ -474,7 +483,7 @@ namespace Uber.Services
                 };
             }
             var trip = await _tripRepository.getTripByIdAsync(tender.TripId);
-            if (trip.Status == TripStatue.WaitingForConifirmationOnTender && tender.staute == TenderStatue.WaitingForDriverConfirimation)
+            if (trip.Status == TripStatue.DriverWaiting && tender.staute == TenderStatue.WaitingForDriverConfirimation)
             {
                 await using var transaction = await _db.Database.BeginTransactionAsync();
                 try

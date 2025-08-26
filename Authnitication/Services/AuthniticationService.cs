@@ -22,14 +22,14 @@ namespace Authnitication.Services
 {
     public class AuthniticationService<TUser,TDataBase> : IAuthniticationService<TUser,TDataBase>
         where TUser : IdentityUser
-        where TDataBase : DbContext, IRefershTokenDataBase
+        where TDataBase : DbContext, IRefershTokenDataBase<TUser>
     {
         private readonly IConfiguration _configuration;
-        private readonly IRefershTokenReposotiry<TDataBase> _refershtokenReposiroty;
+        private readonly IRefershTokenReposotiry<TDataBase,TUser> _refershtokenReposiroty;
         private readonly IUserIdentityAuthincation<TUser> _userIdentityAuthincation;
         private readonly TokenValidationParameters _tokenValidationParameters;
 
-        public AuthniticationService(IConfiguration configuration, IRefershTokenReposotiry<TDataBase> refershtokenReposiroty,
+        public AuthniticationService(IConfiguration configuration, IRefershTokenReposotiry<TDataBase,TUser> refershtokenReposiroty,
             IUserIdentityAuthincation<TUser> userIdentityAuthincation, TokenValidationParameters tokenValidationParameters)
         {
             _configuration = configuration;
@@ -38,7 +38,7 @@ namespace Authnitication.Services
             _tokenValidationParameters = tokenValidationParameters;
         }
 
-        public async Task<AuthResult> CreateUserAsync(TUser userdata, string password, string role)
+        public async Task<AuthResult> CreateUserAsync(TUser userdata, string password, string role, string IpAdress)
         {
             try
             {
@@ -54,7 +54,7 @@ namespace Authnitication.Services
                     };
                 }
                
-                var result = await signInUser(userdata.Email!,password);
+                var result = await signInUser(userdata.Email!,password, IpAdress);
                 return result;
             }
             catch (Exception ex)
@@ -69,7 +69,7 @@ namespace Authnitication.Services
         }
         // here where we verify the refresh token
         // and here i extract the  claims from the jwt token  but i dont know why the jti claim is not generated if i put claim of userId
-        public async Task<AuthResult> getrefeshedtoken(string token, string refersh)
+        public async Task<AuthResult> getrefeshedtoken(string token, string refersh, string IpAdress)
         {
             var jwtHandler = new JwtSecurityTokenHandler();
             try
@@ -128,7 +128,14 @@ namespace Authnitication.Services
                         Error = new List<string> { "refesh Token is expired" }
                     };
                 }
-               
+                if (storedToken.IpAddress != IpAdress) 
+                {
+                    return new AuthResult
+                    {
+                        success = false,
+                        Error = new List<string> { "Ip Address doesnt match" }
+                    };
+                }
                 var jti = jwtSecurityToken?.Id;
                 if (storedToken.JwtId != jti)
                 {
@@ -142,7 +149,7 @@ namespace Authnitication.Services
                 await  _refershtokenReposiroty.UpdateRefreshTokenAsync(storedToken);
                 var dbuser = await _userIdentityAuthincation.FindByEmailAsync(email);
                 var roles = await _userIdentityAuthincation.GetUserRolesAsync(dbuser);
-                return await GenerateJwtToken(dbuser,roles);
+                return await GenerateJwtToken(dbuser,roles,IpAdress);
 
             }
             catch (Exception ex)
@@ -154,13 +161,8 @@ namespace Authnitication.Services
                 };
             }
         }
-        private DateTime UnixTimeStampToDateTime(long utcExpiryDate)
-        {
-            var datetimeval = new DateTime(1970, 1, 1, 0, 0, 0, DateTimeKind.Utc);
-            datetimeval = datetimeval.AddSeconds(utcExpiryDate).ToLocalTime();
-            return datetimeval;
-        }
-        public async Task<AuthResult> signInUser(string userEmail, string password)
+     
+        public async Task<AuthResult> signInUser(string userEmail, string password, string IpAdress)
         {
             try 
             {
@@ -182,7 +184,7 @@ namespace Authnitication.Services
                         success = false
                     };
                 }
-                var result = await GenerateJwtToken(user, roles);
+                var result = await GenerateJwtToken(user, roles, IpAdress);
                 return result;
             }
             catch (Exception ex)
@@ -207,12 +209,22 @@ namespace Authnitication.Services
             }
            
         }
+        
         // here wen we generate the jwt token we also generate the refresh token
         // here is where error happens when  i try give claim Uid and give userId some how it not genrates jti claim
         // and also i tried to add claim of expiry date it also not working
-        private async Task<AuthResult> GenerateJwtToken(IdentityUser user, List<string> roles)
+        
+        private string RandomString(int lenght)
         {
-     
+            var random = new Random();
+            var chars = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789";
+
+            return new string(Enumerable.Repeat(chars, lenght).
+                Select(x => x[random.Next(x.Length)]).ToArray());
+        }
+
+        public async Task<AuthResult> GenerateJwtToken(IdentityUser user, List<string> roles, string IpAdress)
+        {
             var expirydateTime = DateTime.UtcNow.AddMinutes(30); // Set the token expiration time
             var jwtHandler = new JwtSecurityTokenHandler();
             var key = Encoding.ASCII.GetBytes(_configuration["jwt:Key"]);
@@ -227,7 +239,7 @@ namespace Authnitication.Services
             {
                 claims.Add(new Claim(ClaimTypes.Role, role));
             }
-            claims.Add(new Claim(ClaimTypes.Expiration,expirydateTime.ToString() ));
+            claims.Add(new Claim(ClaimTypes.Expiration, expirydateTime.ToString()));
             claims.Add(new Claim("UID", user.Id.ToString()));
             var tokenDescriptor = new SecurityTokenDescriptor
             {
@@ -242,8 +254,10 @@ namespace Authnitication.Services
             var token = jwtHandler.CreateToken(tokenDescriptor);
             var jwttoken = jwtHandler.WriteToken(token);
 
-            var refreshToken = new RefreshToken
+            var refreshToken = new RefreshToken<TUser>
             {
+                UserId = user.Id,
+                IpAddress = IpAdress,
                 Token = RandomString(35) + Guid.NewGuid(),
                 JwtId = token.Id,
                 isUsed = false,
@@ -251,8 +265,8 @@ namespace Authnitication.Services
                 AddedDate = DateTime.UtcNow,
                 ExpiresDate = DateTime.UtcNow.AddMinutes(60)
             };
-          
-             await _refershtokenReposiroty.AddRefreshTokenAsync(refreshToken);
+            await _refershtokenReposiroty.MakeOldRefreshTokenRevekod(user.Id,IpAdress);
+            await _refershtokenReposiroty.AddRefreshTokenAsync(refreshToken);
             // Implementation for generating JWT token goes here
             // This is a placeholder and should be replaced with actual token generation logic
             return new AuthResult()
@@ -262,15 +276,5 @@ namespace Authnitication.Services
                 RefreshToken = refreshToken.Token
             };
         }
-        private string RandomString(int lenght)
-        {
-            var random = new Random();
-            var chars = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789";
-
-            return new string(Enumerable.Repeat(chars, lenght).
-                Select(x => x[random.Next(x.Length)]).ToArray());
-        }
-
-       
     }
 }

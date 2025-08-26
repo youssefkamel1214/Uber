@@ -18,6 +18,7 @@ namespace Uber.Models.Domain
         public DateTime RequestTime { get; set; }
         public DateTime? StartTime { get; set; }
         public DateTime? EndTime { get; set; }
+        public DateTime? BanTimeExires { get; set; }
         public virtual Passenger Passenger { get; set; }
         public virtual Driver Driver { get; set; }
     }

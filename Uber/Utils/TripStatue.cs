@@ -7,6 +7,5 @@
         TripBegin,// Trip has started , after picup
         TripCompleted,// Trip has been completed
         TripCancelled,// Trip has been cancelled by either the driver or the rider
-        WaitingForConifirmationOnTender
     }
 }

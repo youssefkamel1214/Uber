@@ -16,7 +16,8 @@ namespace Uber.Models.DTO.Reqeusts
         [MinLength(6)]
         public string password { get; set; }
         [Required]
-        [MaxLength(12)]
+        [StringLength(11, MinimumLength = 11, ErrorMessage = "Phone number must be exactly 12 digits.")]
+        [RegularExpression(@"^\d{11}$", ErrorMessage = "Phone number must be numeric and exactly 12 digits.")]
         public string PhoneNumber { get; set; }
         [Required]
         [MaxLength(10)]

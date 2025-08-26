@@ -8,14 +8,14 @@ using Uber.Models.Domain.Configurations;
 
 namespace Uber.Data
 {
-    public class UberAuthDatabase: IdentityDbContext,IRefershTokenDataBase
+    public class UberAuthDatabase: IdentityDbContext,IRefershTokenDataBase<UberUser>
     {
         public DbSet<UberUser> UberUsers { get; set; }
         public DbSet<Trip> trips { get; set; }
         public DbSet<Review> reviews { get; set; }
         public DbSet<Cancellation> cancellations { get; set; }
         public DbSet<Tender>tenders { get; set; }
-        public DbSet<RefreshToken> RefreshTokens { get; set; }
+        public DbSet<RefreshToken<UberUser>> RefreshTokens { get; set; }
 
         public UberAuthDatabase(DbContextOptions<UberAuthDatabase> options) : base(options)
         {

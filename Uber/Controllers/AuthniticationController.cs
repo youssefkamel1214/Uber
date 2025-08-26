@@ -2,6 +2,7 @@
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Identity.Data;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.RateLimiting;
 using Uber.Data;
 using Uber.Models.Domain;
 using Uber.Models.DTO.Reqeusts;
@@ -26,6 +27,7 @@ namespace Uber.Controllers
 
         [HttpPost]
         [Route("SignUpDriver")]
+        [EnableRateLimiting("AuthnticationLimiter")]  
         public async Task< IActionResult> SignUpDriver([FromBody] RegisterDriverRequestDto registerRequest)
         {
             // Here you would typically call your authentication service to create a user
@@ -42,7 +44,7 @@ namespace Uber.Controllers
             
             var  result = await _authService.CreateUserAsync(
                 driver, 
-                registerRequest.password, "Driver");
+                registerRequest.password, "Driver", HttpContext.Connection.RemoteIpAddress?.ToString() ?? "unKnown");
             if (result.success)
             {
                 await _driverRepository.MarkDriverIsActive(registerRequest.Email);
@@ -55,6 +57,8 @@ namespace Uber.Controllers
         }
         [HttpPost]
         [Route("SignUpPassenger")]
+        [EnableRateLimiting("AuthnticationLimiter")]  // 👈 Apply rate limit policy
+
         public async Task<IActionResult> SignUpPassenger([FromBody] RegisterPassengerRequest registerRequest)
         {
             // Here you would typically call your authentication service to create a user
@@ -65,7 +69,7 @@ namespace Uber.Controllers
                 Email = registerRequest.Email,
                 PhoneNumber = registerRequest.PhoneNumber, 
             };
-            var result = await _authService.CreateUserAsync(passenger, registerRequest.Password, "Passenger");
+            var result = await _authService.CreateUserAsync(passenger, registerRequest.Password, "Passenger", HttpContext.Connection.RemoteIpAddress?.ToString() ?? "unKnown");
             if (result.success)
             {
                 return Ok(result);
@@ -77,11 +81,13 @@ namespace Uber.Controllers
         }
         [HttpPost]
         [Route("signin")]
+        [EnableRateLimiting("AuthnticationLimiter")]  // 👈 Apply rate limit policy
+
         public async Task<IActionResult> SignIn([FromBody] LoginReqeustDto loginRequest)
         {
             // Here you would typically call your authentication service to sign in a user
             // For now, we will just return a success message
-            var result = await _authService.signInUser(loginRequest.Email, loginRequest.Password);
+            var result = await _authService.signInUser(loginRequest.Email, loginRequest.Password, HttpContext.Connection.RemoteIpAddress?.ToString()??"unKnown");
             if (result.success)
             {
                 await  _driverRepository.MarkDriverIsActive(loginRequest.Email);
@@ -97,11 +103,14 @@ namespace Uber.Controllers
 
         [HttpPost]
         [Route("refreshtoken")]
+        [EnableRateLimiting("AuthnticationLimiter")]  // 👈 Apply rate limit policy
+
         public async Task<IActionResult> RefreshToken([FromBody] RefreshTokenRequestDto refreshTokenRequest)
         {
             // Here you would typically call your authentication service to refresh the token
             // For now, we will just return a success message
-            var result = await _authService.getrefeshedtoken(refreshTokenRequest.Token, refreshTokenRequest.RefreshToken);
+            var result = await _authService.getrefeshedtoken(refreshTokenRequest.Token, 
+                refreshTokenRequest.RefreshToken,HttpContext.Connection.RemoteIpAddress?.ToString()??"unKnown");
             if (result.success)
             {
                 return Ok(result);

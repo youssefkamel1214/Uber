@@ -10,8 +10,6 @@ namespace Uber.Repositories.Interfaces
         public Task<bool> isThereActiveDriverTenderForThisTrip(Guid tripId, string driverId);
         public Task<bool> updateTender(Tender tender);
         public Task<List<TenderDataResponse>> GetTendersByTripIdAsync(Guid tripId);
-        protected Task makeTenderExpire(Tender tender);
-        protected Task timeOutTenderConfirm(Tender tender);
         public Task updateRestOfActiveTenders(Tender tender);
         public Task<List<Tender>>  getRestOfTripsThathasTenders(Tender tender);
     }

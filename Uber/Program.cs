@@ -10,6 +10,7 @@ using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.OpenApi.Models;
 using Serilog;
+using System.Threading.RateLimiting;
 using Uber.Data;
 using Uber.Middleware;
 using Uber.Models.Domain;
@@ -29,8 +30,7 @@ namespace Uber
             builder.Services.AddDbContext<UberAuthDatabase>(
              options => options.UseNpgsql(builder.Configuration.GetConnectionString("WebApiDatabase")));
         
-            builder.Services.AddScoped<IRefershTokenReposotiry<UberAuthDatabase>, RefershTokenRepository<UberAuthDatabase>>();
-            builder.Services.AddScoped<IUserIdentityAuthincation<UberUser>, UserIdentityAuthincation<UberUser>>();
+            builder.Services.AddScoped<IRefershTokenReposotiry<UberAuthDatabase,UberUser>, RefershTokenRepository<UberAuthDatabase, UberUser>>();
             builder.Services.AddScoped<IUserIdentityAuthincation<UberUser>, UserIdentityAuthincation<UberUser>>();
             builder.Services.AddScoped<IAuthniticationService<UberUser,UberAuthDatabase>, AuthniticationService<UberUser, UberAuthDatabase>>();
             builder.Services.AddScoped<IDriverRepository, DriverRepository>(); 
@@ -82,6 +82,25 @@ namespace Uber
            });
             builder.Services.AddSingleton(TokenValidationParameters);
         }
+        private static void addMigrations(WebApplication app, Serilog.Core.Logger logger)
+        {
+            using (var scope = app.Services.CreateScope())
+            {
+                var services = scope.ServiceProvider;
+                try
+                {
+                    var dbContext = services.GetRequiredService<UberAuthDatabase>();
+                    dbContext.Database.Migrate();
+
+                    // Creates database and tables
+                    // OR for migrations: dbContext.Database.Migrate();
+                }
+                catch (Exception ex)
+                {
+                    logger.Error(ex, "An error occurred while migrating the database.");
+                }
+            }
+        }
         public static void Main(string[] args)
         {
             var builder = WebApplication.CreateBuilder(args);
@@ -128,24 +147,28 @@ namespace Uber
                 }
                 });
             });
-
-            var app = builder.Build();
-            using (var scope = app.Services.CreateScope())
+            builder.Services.AddRateLimiter(options =>
             {
-                var services = scope.ServiceProvider;
-                try
+                options.AddPolicy("AuthnticationLimiter", httpContext => RateLimitPartition.
+                GetFixedWindowLimiter(partitionKey: httpContext.Connection.
+                RemoteIpAddress?.ToString(),
+                factory: partion => new FixedWindowRateLimiterOptions()
                 {
-                    var dbContext = services.GetRequiredService<UberAuthDatabase>();
-                    dbContext.Database.Migrate(); 
-                   
-                    // Creates database and tables
-                    // OR for migrations: dbContext.Database.Migrate();
-                }
-                catch (Exception ex)
+                    PermitLimit = 5,
+                    Window = TimeSpan.FromMinutes(1),
+                }));
+
+                options.OnRejected = async (context, cancellationToken) =>
                 {
-                   logger.Error(ex, "An error occurred while migrating the database."); 
-                }
-            }
+                    context.HttpContext.Response.StatusCode = 429;
+                    await context.HttpContext.Response.
+                    WriteAsync("Too many requests. Please try again later.",
+                    cancellationToken);
+                };
+            });
+            var app = builder.Build();
+            addMigrations(app,logger);
+           
             // Configure the HTTP request pipeline.
             if (app.Environment.IsDevelopment())
             {
@@ -157,9 +180,12 @@ namespace Uber
 
             app.UseAuthorization();
             app.UseWebSockets();
+            app.UseRateLimiter();
             app.MapControllers();
 
             app.Run();
         }
+
+        
     }
 }

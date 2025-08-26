@@ -9,6 +9,7 @@ namespace Uber.Models.Domain
         public Guid TripId { get; set; }
         public string DriverId { get; set; }
         public DateTime TenderTime { get; set; }
+        public DateTime ExpiresAt { get; set; }
         public decimal OfferedPrice { get; set; }
         [JsonConverter(typeof(JsonStringEnumConverter))]
         public TenderStatue staute { get; set; } = TenderStatue.WaitingForPassenger;
