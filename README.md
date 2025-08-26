@@ -1,7 +1,7 @@
 🚖 Uber Ride-Sharing API
 
 A RESTful ASP.NET Core Web API that powers a ride-sharing platform.
-It includes driver & passenger management, trip requests, tendering system, reviews, cancellations, authentication with JWT & refresh tokens, real-time WebSocket updates, and global exception handling for clean error responses.
+It includes driver & passenger management, trip requests, tendering system, reviews, cancellations, authentication with JWT & refresh tokens, rate limiting, real-time WebSocket updates, and global exception handling for clean error responses.
 
 📌 Features
 
@@ -12,6 +12,8 @@ Driver & Passenger sign-up
 Identity-based authentication with JWT & Refresh Tokens
 
 Role-based Authorization (Driver, Passenger)
+
+Rate Limiting on Auth Endpoints to prevent brute-force attacks
 
 ✅ Trips
 
@@ -27,9 +29,9 @@ Passengers accept/reject offers
 
 ✅ Reviews & Ratings
 
-Leave reviews for trips
+Leave reviews & ratings for trips
 
-Automatic rating aggregation
+Automatic rating aggregation for drivers/passengers
 
 ✅ Cancellations
 
@@ -51,6 +53,8 @@ JWT Authentication + Refresh Tokens
 
 WebSockets for real-time communication
 
+ASP.NET Core Rate Limiting Middleware
+
 AutoMapper (optional mapping)
 
 Serilog for logging
@@ -67,11 +71,6 @@ Uber.API/
 │
 ├── Models/
 │   ├── Domain/
-│   │   ├── Driver.cs
-│   │   ├── Passenger.cs
-│   │   ├── Trip.cs
-│   │   ├── Tender.cs
-│   │   └── Review.cs
 │   ├── DTOs/
 │   └── Configurations/
 │
@@ -110,6 +109,14 @@ On success, receive JWT + Refresh Token
 ♻️ Refresh Tokens
 
 Refresh via: POST /api/Authnitication/refreshtoken
+
+If a valid refresh token is provided, a new JWT is issued and the refresh token marked as used
+
+⛔ Rate Limiting
+
+Applied on authentication routes (/signin, /refreshtoken, /SignUpDriver, /SignUpPassenger)
+
+Prevents brute-force login attempts per IP
 
 👥 Roles
 
@@ -211,6 +218,13 @@ POST /api/Tender/RejectTenderOffer
 Reviews
 
 POST /api/Trip/MakeReview
+Example payload:
+
+{
+  "tripId": "2b1f7b65-81d4-4f1a-9d35-45a67c71b8f2",
+  "rating": 5,
+  "comment": "Smooth ride, great driver!"
+}
 
 💡 Future Improvements
 
