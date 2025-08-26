@@ -63,41 +63,33 @@ Swagger / Swashbuckle
 
 📂 Project Structure
 Uber.API/
-│
-├── Controllers/
-│   ├── AuthniticationController.cs
-│   ├── TripController.cs
-│   └── TenderController.cs
-│
-├── Models/
-│   ├── Domain/
-│   ├── DTOs/
-│   └── Configurations/
-│
-├── Services/
-│   ├── AuthniticationService.cs
-│   ├── TripService.cs
-│   └── NotificationManager.cs
-│
-├── Repositories/
-│   ├── DriverRepository.cs
-│   ├── PassengerRepository.cs
-│   ├── TripRepository.cs
-│   ├── TenderRepository.cs
-│   └── ReviewRepository.cs
-│
-├── Data/
-│   └── UberAuthDatabase.cs
-│
-├── Middleware/
-│   └── ExceptionHandlerMiddleware.cs
-│
-├── WebSockets/
-│   ├── webSocketManager.cs
-│   └── WebSocketService.cs
-│
-├── appsettings.json
-└── Program.cs
+  - Controllers/
+    -- AuthniticationController.cs
+    -- TripController.cs
+    -- TenderController.cs
+  - Models/
+    -- Domain/
+    -- DTOs/
+    -- Configurations/
+  - Services/
+    -- AuthniticationService.cs
+    -- TripService.cs
+    -- NotificationManager.cs
+  - Repositories/
+    --  DriverRepository.cs
+    -- PassengerRepository.cs
+    -- TripRepository.cs
+    -- TenderRepository.cs
+    -- ReviewRepository.cs
+  - Data/
+    --  UberAuthDatabase.cs
+  - Middleware/
+    -- ExceptionHandlerMiddleware.cs
+  - WebSockets/
+    -- webSocketManager.cs
+    -- WebSocketService.cs
+  - appsettings.json
+  -  Program.cs
 
 🔐 Authentication & Authorization
 🔑 JWT Authentication
